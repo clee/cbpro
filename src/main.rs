@@ -1,14 +1,17 @@
 use cbpro::{PublicClient, SANDBOX_URL};
 //use futures::future::FutureExt;
 use futures::stream::StreamExt;
+use tokio_timer::delay_for;
+use core::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = PublicClient::new(SANDBOX_URL);
     let mut stream = client.get_trades("BTC-USD", 100);
 
-    while let Some(Ok(resp)) = stream.next().await {
-        //println!("{:?}", resp)
+    while let Some(Ok(json)) = stream.next().await {
+        println!("{}", serde_json::to_string_pretty(&json).unwrap());
+        delay_for(Duration::new(1, 0)).await;
     }
 
 /*     let resp = client.get_trades2("BTC-USD", "100").await;
