@@ -5,8 +5,9 @@ use futures::stream::StreamExt;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = PublicClient::new(SANDBOX_URL);
+    let mut stream = client.get_trades("BTC-USD", 100);
 
-    while let Some(Ok(_)) = client.get_trades("BTC-USD", 100).next().await {
+    while let Some(Ok(resp)) = stream.next().await {
         //println!("{:?}", resp)
     }
 

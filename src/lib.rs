@@ -56,19 +56,17 @@ impl PublicClient {
         self.client.get(url).send().await?.json().await
     }
 
-    pub fn get_trades(&self, product_id: &str, limit: u32) -> Paginate {
+    pub fn get_trades(&self, product_id: &str, limit: u32) -> Paginated {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        //let query = &[("limit", &limit.to_string()[..])];
-        //let req = self.client.get(url).query(query).build().unwrap();
-
-        Paginate {
+   
+        Paginated {
             in_flight: ResponseFuture::new(Box::new(self.client.get(url.clone()).send())),
             client: self.client.clone(),
             method: Method::GET,
-            url: url.to_string(),
+            url: url.clone(),
             after: String::new(),
-            limit: 100,
+            limit: limit.to_string(),
             state: State::Start,
         }
     }
@@ -89,31 +87,26 @@ enum State {
     Stop,
 }
 
-pub struct Paginate {
+pub struct Paginated {
     in_flight: ResponseFuture,
+
     client: Client,
     method: Method,
-    url: String,
+    url: Url,
+
     after: String,
-    limit: u32,
+    limit: String,
+
     state: State,
 }
 
-impl Paginate {
+impl Paginated {
     fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture> {
         unsafe { Pin::map_unchecked_mut(self, |x| &mut x.in_flight) }
     }
-
-    fn after(self: Pin<&mut Self>) -> &mut String {
-        unsafe { &mut Pin::get_unchecked_mut(self).after }
-    }
-
-    fn state(self: Pin<&mut Self>) -> &mut State {
-        unsafe { &mut Pin::get_unchecked_mut(self).state }
-    }
 }
 
-impl Stream for Paginate {
+impl Stream for Paginated {
     type Item = Result<Response, Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -130,17 +123,16 @@ impl Stream for Paginate {
         };
 
         if let Some(after) = res.headers().get("cb-after") {
-            println!("cb-before_mut {}", &self.after);
-            let limit = self.limit.to_string();
+            println!("cb-after {:?}", after);
 
             self.after = String::from(after.to_str().unwrap());
-            println!("cb-after_mut {}", &self.after);
 
             *self.as_mut().in_flight().get_mut() = ResponseFuture::new(Box::new(
-                self.client.request(self.method.clone(), Url::parse(&self.url).unwrap()).query(&[("limit", limit), ("after", String::from(&self.after))]).send(),
+                self.client.request(self.method.clone(), self.url.clone()).query(&[("limit", &self.limit), ("after", &self.after)]).send(),
             ));
+            
         } else {
-            *self.as_mut().state() = State::Stop;
+            self.state = State::Stop;
         }
 
         Poll::Ready(Some(Ok(res)))
