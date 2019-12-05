@@ -14,13 +14,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         delay_for(Duration::new(1, 0)).await;
     }
 
-/*     let resp = client.get_trades2("BTC-USD", "100").await;
-    println!("{:?}", resp.unwrap());
-
-    
-    let resp = client.get_trades2("BTC-USD", "100").await;
-    println!("{:?}", resp.unwrap()); */
-
     Ok(())
 }
 

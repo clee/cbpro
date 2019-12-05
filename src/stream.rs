@@ -8,14 +8,14 @@ use futures::{
 };
 use reqwest::{Client, Error, Method, Response, Url};
 use serde_json::Value;
+use futures::stream::{StreamExt};
 
-
-pub enum State {
+enum State {
     Start,
     Stop,
 }
 
-pub struct Paginate {
+pub(super) struct Paginate {
     in_flight: ResponseFuture,
 
     client: Client,
@@ -29,8 +29,7 @@ pub struct Paginate {
 }
 
 impl Paginate {
-    pub fn new(
-        in_flight: ResponseFuture,
+    pub(super) fn new(
         client: Client,
         method: Method,
         url: Url,
@@ -38,7 +37,7 @@ impl Paginate {
         limit: String
     ) -> Self {
         Self {
-            in_flight,
+            in_flight: ResponseFuture::new(Box::new(client.request(method.clone(), url.clone()).send())),
             client,
             method,
             url,
@@ -47,6 +46,11 @@ impl Paginate {
             state: State::Start,
         }
     }
+
+    pub(super) fn into_json(self) -> JsonStream {
+        JsonStream::new(Box::new(self.then(|x| async move { x?.json::<Value>().await })))
+    }
+
     fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture> {
         unsafe { Pin::map_unchecked_mut(self, |x| &mut x.in_flight) }
     }
@@ -69,28 +73,23 @@ impl Stream for Paginate {
         };
 
         if let Some(after) = res.headers().get("cb-after") {
-            println!("cb-after {:?}", after);
-
             self.after = String::from(after.to_str().unwrap());
-
             self.in_flight = ResponseFuture::new(Box::new(
                 self.client.request(self.method.clone(), self.url.clone()).query(&[("limit", &self.limit), ("after", &self.after)]).send(),
             ));
-
         } else {
             self.state = State::Stop;
         }
-
         Poll::Ready(Some(Ok(res)))
     }
 }
 
-pub struct ResponseFuture {
+struct ResponseFuture {
     inner: Pin<Box<dyn Future<Output = Result<Response, Error>> + Send>>,
 }
 
 impl ResponseFuture {
-    pub fn new(fut: Box<dyn Future<Output = Result<Response, Error>> + Send>) -> Self {
+    fn new(fut: Box<dyn Future<Output = Result<Response, Error>> + Send>) -> Self {
         Self { inner: fut.into() }
     }
 }

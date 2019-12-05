@@ -1,7 +1,6 @@
-use reqwest::{Client, Error, Method, Response, Url};
+use crate::stream::{JsonStream, Paginate};
+use reqwest::{Client, Error, Method, Url};
 use serde_json::Value;
-use crate::streams::{Paginate, ResponseFuture, JsonStream};
-use futures::stream::{StreamExt, Then};
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
@@ -49,16 +48,13 @@ impl PublicClient {
     pub fn get_trades(&self, product_id: &str, limit: u32) -> JsonStream {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
-   
-        let stream = Paginate::new(
-            ResponseFuture::new(Box::new(self.client.get(url.clone()).send())),
+        Paginate::new(
             self.client.clone(),
             Method::GET,
             url.clone(),
             String::new(),
             limit.to_string(),
-        );
-
-        JsonStream::new(Box::new(stream.then(|x| async move { x?.json::<Value>().await })))
+        )
+        .into_json()
     }
 }
