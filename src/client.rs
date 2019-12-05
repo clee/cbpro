@@ -1,5 +1,5 @@
 use crate::stream::{JsonStream, Paginate};
-use reqwest::{Client, Error, Method, Url};
+use reqwest::{Client, Error, Url};
 use serde_json::Value;
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
@@ -11,7 +11,7 @@ pub struct AuthenticatedClient {
 
 #[derive(Debug)]
 pub struct PublicClient {
-    client: reqwest::Client,
+    client: Client,
     url: Url,
 }
 
@@ -50,7 +50,6 @@ impl PublicClient {
         let url = self.url.join(&endpoint).unwrap();
         Paginate::new(
             self.client.clone(),
-            Method::GET,
             url.clone(),
             limit.to_string(),
         )
