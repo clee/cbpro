@@ -52,7 +52,6 @@ impl PublicClient {
             self.client.clone(),
             Method::GET,
             url.clone(),
-            String::new(),
             limit.to_string(),
         )
         .into_json()

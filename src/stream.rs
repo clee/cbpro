@@ -17,14 +17,10 @@ enum State {
 
 pub(super) struct Paginate {
     in_flight: ResponseFuture,
-
     client: Client,
     method: Method,
     url: Url,
-
-    after: String,
     limit: String,
-
     state: State,
 }
 
@@ -33,7 +29,6 @@ impl Paginate {
         client: Client,
         method: Method,
         url: Url,
-        after: String,
         limit: String
     ) -> Self {
         Self {
@@ -41,7 +36,6 @@ impl Paginate {
             client,
             method,
             url,
-            after,
             limit,
             state: State::Start,
         }
@@ -73,9 +67,9 @@ impl Stream for Paginate {
         };
 
         if let Some(after) = res.headers().get("cb-after") {
-            self.after = String::from(after.to_str().unwrap());
+            let after = String::from(after.to_str().unwrap());
             self.in_flight = ResponseFuture::new(Box::new(
-                self.client.request(self.method.clone(), self.url.clone()).query(&[("limit", &self.limit), ("after", &self.after)]).send(),
+                self.client.request(self.method.clone(), self.url.clone()).query(&[("limit", &self.limit), ("after", &after)]).send(),
             ));
         } else {
             self.state = State::Stop;
