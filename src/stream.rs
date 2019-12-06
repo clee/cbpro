@@ -13,6 +13,7 @@ enum State {
 }
 
 type ResponseFuture = BoxFuture<'static, Result<Response, Error>>;
+pub type JsonStream = BoxStream<'static, Result<Value, Error>>;
 
 pub(super) struct Paginate {
     in_flight: ResponseFuture,
@@ -33,11 +34,9 @@ impl Paginate {
         }
     }
 
-    pub(super) fn json(self) -> Json {
-        Json::new(
-            self.then(|x| async move { x?.json::<Value>().await })
-                .boxed(),
-        )
+    pub(super) fn json(self) -> JsonStream {
+        self.then(|x| async move { x?.json::<Value>().await })
+            .boxed()
     }
 
     fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture> {
@@ -73,23 +72,5 @@ impl Stream for Paginate {
             self.state = State::Stop;
         }
         Poll::Ready(Some(Ok(res)))
-    }
-}
-
-pub struct Json {
-    inner: BoxStream<'static, Result<Value, Error>>,
-}
-
-impl Json {
-    fn new(stream: BoxStream<'static, Result<Value, Error>>) -> Self {
-        Self { inner: stream }
-    }
-}
-
-impl Stream for Json {
-    type Item = Result<Value, Error>;
-
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        Pin::new(&mut self.inner).poll_next(cx)
     }
 }
