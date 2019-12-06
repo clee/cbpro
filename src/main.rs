@@ -1,4 +1,4 @@
-use cbpro::{MarketData, SANDBOX_URL};
+use cbpro::{PublicClient, SANDBOX_URL};
 //use futures::future::FutureExt;
 use futures::stream::StreamExt;
 use tokio_timer::delay_for;
@@ -9,7 +9,7 @@ use chrono::Duration; */
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = MarketData::new(SANDBOX_URL);
+    let client = PublicClient::new(SANDBOX_URL);
     let mut stream = client.get_trades("BTC-USD", 100);
 
     while let Some(Ok(json)) = stream.next().await {
@@ -34,5 +34,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let passphrase = "ycafwe00bgh";
     let key = "bec7e2ec5953b659e6d190f9d1461caa";
 
-    let client = MarketData::new();
+    let client = PublicClient::new();
 } */

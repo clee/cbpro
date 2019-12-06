@@ -3,4 +3,4 @@
 mod stream;
 mod client;
 
-pub use self::client::{MarketData, SANDBOX_URL};
+pub use self::client::{PublicClient, SANDBOX_URL};

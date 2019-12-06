@@ -1,11 +1,8 @@
-use core::{
-    future::Future, 
-    pin::Pin
-};
+use core::{future::Future, pin::Pin};
 use futures::{
-    stream::{StreamExt, Stream, BoxStream},
+    future::{BoxFuture, FutureExt},
+    stream::{BoxStream, Stream, StreamExt},
     task::{Context, Poll},
-    future::{FutureExt, BoxFuture},
 };
 use reqwest::{Client, Error, Response, Url};
 use serde_json::Value;
@@ -16,7 +13,6 @@ enum State {
 }
 
 type ResponseFuture = BoxFuture<'static, Result<Response, Error>>;
-pub type Json = BoxStream<'static, Result<Value, Error>>;
 
 pub(super) struct Paginate {
     in_flight: ResponseFuture,
@@ -27,11 +23,7 @@ pub(super) struct Paginate {
 }
 
 impl Paginate {
-    pub(super) fn new(
-        client: Client,
-        url: Url,
-        limit: String
-    ) -> Self {
+    pub(super) fn new(client: Client, url: Url, limit: String) -> Self {
         Self {
             in_flight: client.get(url.clone()).send().boxed(),
             client,
@@ -42,7 +34,10 @@ impl Paginate {
     }
 
     pub(super) fn json(self) -> Json {
-        self.then(|x| async move { x?.json::<Value>().await }).boxed()
+        Json::new(
+            self.then(|x| async move { x?.json::<Value>().await })
+                .boxed(),
+        )
     }
 
     fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture> {
@@ -68,10 +63,33 @@ impl Stream for Paginate {
 
         if let Some(after) = res.headers().get("cb-after") {
             let after = String::from(after.to_str().unwrap());
-            self.in_flight = self.client.get(self.url.clone()).query(&[("limit", &self.limit), ("after", &after)]).send().boxed();
+            self.in_flight = self
+                .client
+                .get(self.url.clone())
+                .query(&[("limit", &self.limit), ("after", &after)])
+                .send()
+                .boxed();
         } else {
             self.state = State::Stop;
         }
         Poll::Ready(Some(Ok(res)))
+    }
+}
+
+pub struct Json {
+    inner: BoxStream<'static, Result<Value, Error>>,
+}
+
+impl Json {
+    fn new(stream: BoxStream<'static, Result<Value, Error>>) -> Self {
+        Self { inner: stream }
+    }
+}
+
+impl Stream for Json {
+    type Item = Result<Value, Error>;
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        Pin::new(&mut self.inner).poll_next(cx)
     }
 }

@@ -7,18 +7,18 @@ pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
 #[derive(Debug)]
 pub struct AuthenticatedClient {
-    public: MarketData,
+    public: PublicClient,
 }
 
 #[derive(Debug)]
-pub struct MarketData {
+pub struct PublicClient {
     client: Client,
     url: Url,
 }
 
-impl MarketData {
-    pub fn new(url: &str) -> MarketData {
-        MarketData {
+impl PublicClient {
+    pub fn new(url: &str) -> PublicClient {
+        PublicClient {
             client: Client::new(),
             url: Url::parse(url).expect("Invalid Url"),
         }
@@ -45,13 +45,45 @@ impl MarketData {
         let url = self.url.join(&endpoint).unwrap();
         self.client.get(url).send().await?.json().await
     }
-
+    /// # Example
+    /// 
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use futures::stream::StreamExt;
+    /// 
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let mut stream = client.get_trades("BTC-USD", 100);
+    ///
+    /// while let Some(Ok(json)) = stream.next().await {
+    ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
+    ///     tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_trades(&self, product_id: &str, limit: u32) -> Json {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
         Paginate::new(self.client.clone(), url.clone(), limit.to_string()).json()
     }
-
+    /// # Example
+    /// 
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// 
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let end = chrono::offset::Utc::now();
+    /// let start = end - chrono::Duration::hours(5);
+    ///
+    /// let rates = client.get_historic_rates("BTC-USD", start, end , 3600).await?;
+    /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_historic_rates<Tz: TimeZone>(
         &self,
         product_id: &str,
