@@ -1,4 +1,4 @@
-use crate::stream::{JsonStream, Paginate};
+use crate::stream::{Json, Paginate};
 use chrono::{offset::TimeZone, DateTime};
 use reqwest::{Client, Error, Url};
 use serde_json::Value;
@@ -46,10 +46,10 @@ impl MarketData {
         self.client.get(url).send().await?.json().await
     }
 
-    pub fn get_trades(&self, product_id: &str, limit: u32) -> JsonStream {
+    pub fn get_trades(&self, product_id: &str, limit: u32) -> Json {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        Paginate::new(self.client.clone(), url.clone(), limit.to_string()).into_json()
+        Paginate::new(self.client.clone(), url.clone(), limit.to_string()).json()
     }
 
     pub async fn get_historic_rates<Tz: TimeZone>(
