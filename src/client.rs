@@ -10,6 +10,22 @@ pub struct AuthenticatedClient {
     public: PublicClient,
 }
 
+impl AuthenticatedClient {
+    fn new(url: &str) -> Self {
+        Self {
+            public: PublicClient::new(url),
+        }
+    }
+
+    fn client(&self) -> &Client {
+        &self.public.client
+    }
+
+    fn url(&self) -> &Url {
+        &self.public.url
+    }
+}
+
 #[derive(Debug)]
 pub struct PublicClient {
     client: Client,
@@ -17,18 +33,42 @@ pub struct PublicClient {
 }
 
 impl PublicClient {
-    pub fn new(url: &str) -> PublicClient {
-        PublicClient {
+    pub fn new(url: &str) -> Self {
+        Self {
             client: Client::new(),
             url: Url::parse(url).expect("Invalid Url"),
         }
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let products = client.get_products().await?;
+    /// println!("{}", serde_json::to_string_pretty(&products).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_products(&self) -> Result<Value, Error> {
         let url = self.url.join("/products").unwrap();
         self.client.get(url).send().await?.json().await
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let order_book = client.get_product_order_book("BTC-USD", 100).await?;
+    /// println!("{}", serde_json::to_string_pretty(&order_book).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_product_order_book(
         &self,
         product_id: &str,
@@ -39,18 +79,30 @@ impl PublicClient {
         let query = &[("level", &level.to_string()[..])];
         self.client.get(url).query(query).send().await?.json().await
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let ticker = client.get_product_ticker("BTC-USD").await?;
+    /// println!("{}", serde_json::to_string_pretty(&ticker).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_product_ticker(&self, product_id: &str) -> Result<Value, Error> {
         let endpoint = format!("/products/{}/ticker", product_id);
         let url = self.url.join(&endpoint).unwrap();
         self.client.get(url).send().await?.json().await
     }
     /// # Example
-    /// 
+    ///
     /// ```no_run
     /// use cbpro::{PublicClient, SANDBOX_URL};
     /// use futures::stream::StreamExt;
-    /// 
+    ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = PublicClient::new(SANDBOX_URL);
@@ -63,16 +115,16 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_trades(&self, product_id: &str, limit: u32) -> crate::JsonStream {
+    pub fn get_trades(&self, product_id: &str) -> PaginateBuilder {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        Paginate::new(self.client.clone(), url.clone(), limit.to_string()).json()
+        PaginateBuilder::new(self.client.clone(), url.clone())
     }
     /// # Example
-    /// 
+    ///
     /// ```no_run
     /// use cbpro::{PublicClient, SANDBOX_URL};
-    /// 
+    ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = PublicClient::new(SANDBOX_URL);
@@ -103,20 +155,95 @@ impl PublicClient {
         ];
         self.client.get(url).query(query).send().await?.json().await
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let stats = client.get_24hr_stats("BTC-USD").await?;
+    /// println!("{}", serde_json::to_string_pretty(&stats).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_24hr_stats(&self, product_id: &str) -> Result<Value, Error> {
         let endpoint = format!("/products/{}/stats", product_id);
         let url = self.url.join(&endpoint).unwrap();
         self.client.get(url).send().await?.json().await
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let currencies = client.get_currencies().await?;
+    /// println!("{}", serde_json::to_string_pretty(&currencies).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_currencies(&self) -> Result<Value, Error> {
         let url = self.url.join("/currencies").unwrap();
         self.client.get(url).send().await?.json().await
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let time = client.get_time().await?;
+    /// println!("{}", serde_json::to_string_pretty(&time).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn get_time(&self) -> Result<Value, Error> {
         let url = self.url.join("/time").unwrap();
         self.client.get(url).send().await?.json().await
+    }
+}
+
+pub struct PaginateBuilder<'a> {
+    client: Client,
+    url: Url,
+    params: Vec<(&'a str, Option<&'a str>)>
+}
+
+impl<'a> PaginateBuilder<'a> {
+    pub(super) fn new(client: Client, url: Url) -> Self {
+        Self {
+            client,
+            url,
+            params: vec![("limit", None), ("before", None), ("after", None)]
+        }
+    }
+
+    pub fn limit(mut self, limit: &'a str) -> Self {
+        self.params[0].1 = Some(limit);
+        self
+    }
+
+    pub fn before(mut self, before: &'a str) -> Self {
+        self.params[1].1 = Some(before);
+        self
+    }
+
+    pub fn after(mut self, after: &'a str) -> Self {
+        self.params[2].1 = Some(after);
+        self
+    }
+
+    pub fn paginate(self) -> crate::Json<'a> {
+        Paginate::new(
+            self.client,
+            self.url,
+            self.params
+        ).json()
     }
 }

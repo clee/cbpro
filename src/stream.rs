@@ -12,39 +12,51 @@ enum State {
     Stop,
 }
 
-type ResponseFuture = BoxFuture<'static, Result<Response, Error>>;
-pub type JsonStream = BoxStream<'static, Result<Value, Error>>;
+type ResponseFuture<'a> = BoxFuture<'a, Result<Response, Error>>;
+pub type Json<'a> = BoxStream<'a, Result<Value, Error>>;
 
-pub(super) struct Paginate {
-    in_flight: ResponseFuture,
+pub(super) struct Paginate<'a> {
+    in_flight: ResponseFuture<'a>,
     client: Client,
     url: Url,
-    limit: String,
+    params: Vec<(&'a str, Option<&'a str>)>,
     state: State,
 }
 
-impl Paginate {
-    pub(super) fn new(client: Client, url: Url, limit: String) -> Self {
+impl<'a> Paginate<'a> {
+    pub(super) fn new(
+        client: Client,
+        url: Url,
+        params: Vec<(&'a str, Option<&'a str>)>
+    ) -> Self {
+        let mut query = Vec::new();
+
+        for param in &params {
+            if let (param, Some(value)) = param {
+                query.push((param, value));
+            }
+        }
+
         Self {
-            in_flight: client.get(url.clone()).send().boxed(),
+            in_flight: client.get(url.clone()).query(&query).send().boxed(),
             client,
             url,
-            limit,
+            params,
             state: State::Start,
         }
     }
 
-    pub(super) fn json(self) -> JsonStream {
+    pub(super) fn json(self) -> Json<'a> {
         self.then(|x| async move { x?.json::<Value>().await })
             .boxed()
     }
 
-    fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture> {
+    fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture<'a>> {
         unsafe { Pin::map_unchecked_mut(self, |x| &mut x.in_flight) }
     }
 }
 
-impl Stream for Paginate {
+impl<'a> Stream for Paginate<'a> {
     type Item = Result<Response, Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -60,12 +72,18 @@ impl Stream for Paginate {
             Poll::Pending => return Poll::Pending,
         };
 
-        if let Some(after) = res.headers().get("cb-after") {
-            let after = String::from(after.to_str().unwrap());
+        if let (Some(after), None) = (res.headers().get("cb-after"), self.params[1].1) {
+            let mut query: Vec<(&str, &str)> = Vec::new();
+            query.push(("after", after.to_str().unwrap()));
+
+            if let Some(limit) = self.params[0].1 {
+                query.push(("limit", limit))
+            };
+
             self.in_flight = self
                 .client
                 .get(self.url.clone())
-                .query(&[("limit", &self.limit), ("after", &after)])
+                .query(&query)
                 .send()
                 .boxed();
         } else {
