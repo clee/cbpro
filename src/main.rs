@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{:?}", query); */
 
     let client = PublicClient::new(SANDBOX_URL);
-    let mut stream = client.get_trades("BTC-USD").limit("2").before("7833638").paginate();
+    let mut stream = client.get_trades("BTC-USD").after("7837562").paginate();
 
     while let Some(Ok(json)) = stream.next().await {
         println!("{}", to_string_pretty(&json).unwrap());

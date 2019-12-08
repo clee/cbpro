@@ -1,4 +1,4 @@
-use crate::stream::Paginate;
+use crate::PaginateBuilder;
 use chrono::{offset::TimeZone, DateTime};
 use reqwest::{Client, Error, Url};
 use serde_json::Value;
@@ -206,44 +206,5 @@ impl PublicClient {
     pub async fn get_time(&self) -> Result<Value, Error> {
         let url = self.url.join("/time").unwrap();
         self.client.get(url).send().await?.json().await
-    }
-}
-
-pub struct PaginateBuilder<'a> {
-    client: Client,
-    url: Url,
-    params: Vec<(&'a str, Option<&'a str>)>
-}
-
-impl<'a> PaginateBuilder<'a> {
-    pub(super) fn new(client: Client, url: Url) -> Self {
-        Self {
-            client,
-            url,
-            params: vec![("limit", None), ("before", None), ("after", None)]
-        }
-    }
-
-    pub fn limit(mut self, limit: &'a str) -> Self {
-        self.params[0].1 = Some(limit);
-        self
-    }
-
-    pub fn before(mut self, before: &'a str) -> Self {
-        self.params[1].1 = Some(before);
-        self
-    }
-
-    pub fn after(mut self, after: &'a str) -> Self {
-        self.params[2].1 = Some(after);
-        self
-    }
-
-    pub fn paginate(self) -> crate::Json<'a> {
-        Paginate::new(
-            self.client,
-            self.url,
-            self.params
-        ).json()
     }
 }

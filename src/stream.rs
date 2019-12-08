@@ -1,4 +1,4 @@
-use core::{future::Future, pin::Pin};
+use core::pin::Pin;
 use futures::{
     future::{BoxFuture, FutureExt},
     stream::{BoxStream, Stream, StreamExt},
@@ -24,11 +24,7 @@ pub(super) struct Paginate<'a> {
 }
 
 impl<'a> Paginate<'a> {
-    pub(super) fn new(
-        client: Client,
-        url: Url,
-        params: Vec<(&'a str, Option<&'a str>)>
-    ) -> Self {
+    pub(super) fn new(client: Client, url: Url, params: Vec<(&'a str, Option<&'a str>)>) -> Self {
         let mut query = Vec::new();
 
         for param in &params {
@@ -50,10 +46,6 @@ impl<'a> Paginate<'a> {
         self.then(|x| async move { x?.json::<Value>().await })
             .boxed()
     }
-
-    fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture<'a>> {
-        unsafe { Pin::map_unchecked_mut(self, |x| &mut x.in_flight) }
-    }
 }
 
 impl<'a> Stream for Paginate<'a> {
@@ -64,7 +56,7 @@ impl<'a> Stream for Paginate<'a> {
             return Poll::Ready(None);
         }
 
-        let res = match self.as_mut().in_flight().as_mut().poll(cx) {
+        let res = match self.in_flight.poll_unpin(cx) {
             Poll::Ready(Err(e)) => {
                 return Poll::Ready(Some(Err(e)));
             }
@@ -86,9 +78,61 @@ impl<'a> Stream for Paginate<'a> {
                 .query(&query)
                 .send()
                 .boxed();
+        } else if let Some(before) = res.headers().get("cb-before") {
+            let mut query: Vec<(&str, &str)> = Vec::new();
+            query.push(("before", before.to_str().unwrap()));
+
+            if let Some(limit) = self.params[0].1 {
+                query.push(("limit", limit))
+            };
+
+            self.in_flight = self
+                .client
+                .get(self.url.clone())
+                .query(&query)
+                .send()
+                .boxed();
         } else {
             self.state = State::Stop;
         }
         Poll::Ready(Some(Ok(res)))
+    }
+}
+
+pub struct PaginateBuilder<'a> {
+    client: Client,
+    url: Url,
+    params: Vec<(&'a str, Option<&'a str>)>,
+}
+
+impl<'a> PaginateBuilder<'a> {
+    pub(super) fn new(client: Client, url: Url) -> Self {
+        Self {
+            client,
+            url,
+            params: vec![("limit", None), ("before", None), ("after", None)],
+        }
+    }
+
+    pub fn limit(mut self, limit: &'a str) -> Self {
+        self.params[0].1 = Some(limit);
+        self
+    }
+
+    pub fn before(mut self, before: &'a str) -> Self {
+        self.params[0].1 = None;
+        self.params[1].1 = Some(before);
+        self.params[2].1 = None;
+        self
+    }
+
+    pub fn after(mut self, after: &'a str) -> Self {
+        self.params[2].1 = Some(after);
+        self.params[1].1 = None;
+        self
+    }
+
+    pub fn paginate(self) -> Json<'a> {
+        Paginate::new(self.client, self.url, self.params).json()
     }
 }
