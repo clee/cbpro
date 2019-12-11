@@ -1,12 +1,35 @@
+use crate::stream::{Json, Paginate};
+use chrono::{offset::TimeZone, DateTime};
+use reqwest::Error;
 use reqwest::RequestBuilder;
 use serde::Serialize;
-use reqwest::Error;
 use serde_json::Value;
-use crate::stream::{Paginate, Json};
+
+#[derive(Serialize)]
+pub struct NoOptionalParams;
+
+#[derive(Serialize)]
+pub struct ProductOrderBookParams {
+    pub level: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct HistoricRatesParams {
+    pub start: Option<String>,
+    pub end: Option<String>,
+    pub granularity: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct PaginateParams {
+    pub limit: Option<String>,
+    pub before: Option<String>,
+    pub after: Option<String>,
+}
 
 pub struct ArgBuilder<T: Serialize> {
     request_builder: RequestBuilder,
-    serializable: T
+    serializable: T,
 }
 
 impl<T: Serialize> ArgBuilder<T> {
@@ -18,7 +41,12 @@ impl<T: Serialize> ArgBuilder<T> {
     }
 
     pub async fn json(self) -> Result<Value, Error> {
-        self.request_builder.query(&self.serializable).send().await?.json().await
+        self.request_builder
+            .query(&self.serializable)
+            .send()
+            .await?
+            .json()
+            .await
     }
 }
 
@@ -29,20 +57,20 @@ impl ArgBuilder<ProductOrderBookParams> {
     }
 }
 
-impl ArgBuilder<PaginatedParams> {
-    pub fn limit(mut self, limit: u32) -> Self {
-        self.serializable.limit = Some(limit.to_string());
+impl ArgBuilder<PaginateParams> {
+    pub fn limit(mut self, value: u32) -> Self {
+        self.serializable.limit = Some(value.to_string());
         self
     }
 
-    pub fn before(mut self, before: u32) -> Self {
-        self.serializable.before = Some(before.to_string());
+    pub fn before(mut self, value: &str) -> Self {
+        self.serializable.before = Some(value.to_string());
         self.serializable.after = None;
         self
     }
 
-    pub fn after(mut self, after: u32) -> Self {
-        self.serializable.after = Some(after.to_string());
+    pub fn after(mut self, value: &str) -> Self {
+        self.serializable.after = Some(value.to_string());
         self.serializable.before = None;
         self
     }
@@ -52,17 +80,13 @@ impl ArgBuilder<PaginatedParams> {
     }
 }
 
-#[derive(Serialize)]
-pub struct NoOptionalParams;
-
-#[derive(Serialize)]
-pub struct ProductOrderBookParams {
-    pub level: Option<String>
-}
-
-#[derive(Serialize)]
-pub struct PaginatedParams {
-    pub limit: Option<String>,
-    pub before: Option<String>,
-    pub after: Option<String>
+impl ArgBuilder<HistoricRatesParams> {
+    pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self
+    where
+        Tz::Offset: core::fmt::Display,
+    {
+        self.serializable.start = Some(start.to_rfc3339());
+        self.serializable.end = Some(end.to_rfc3339());
+        self
+    }
 }
