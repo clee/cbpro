@@ -1,8 +1,8 @@
 use cbpro::{PublicClient, SANDBOX_URL};
 //use futures::future::FutureExt;
-use futures::stream::StreamExt;
+/* use futures::stream::StreamExt;
 use tokio_timer::delay_for;
-use core::time::Duration;
+use core::time::Duration; */
 use serde_json::to_string_pretty;
 /* use chrono::offset::Utc;
 use chrono::Duration; */
@@ -20,12 +20,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{:?}", query); */
 
     let client = PublicClient::new(SANDBOX_URL);
-    let mut stream = client.get_trades("BTC-USD").after("7837562").paginate();
+    let trades = client.get_trades("BTC-USD").json().await?;
+    println!("{}", to_string_pretty(&trades).unwrap());
 
-    while let Some(Ok(json)) = stream.next().await {
+/*     while let Some(Ok(json)) = stream.next().await {
         println!("{}", to_string_pretty(&json).unwrap());
-        delay_for(Duration::new(5, 0)).await;
-    }
+        delay_for(Duration::new(1, 0)).await;
+    } */
 
 /*     let end = Utc::now();
     let start = end - Duration::hours(5);
@@ -33,7 +34,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rates = client.get_historic_rates("BTC-USD", start, end , 3600).await?;
     println!("{}", to_string_pretty(&rates).unwrap()); */
 
-/*     let stats = client.get_products().await?;
+/*     let client = PublicClient::new(SANDBOX_URL);
+    let stats = client.get_product_order_book("BTC-USD").level(3).json().await?;
     println!("{}", to_string_pretty(&stats).unwrap()); */
 
     Ok(())

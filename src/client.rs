@@ -1,11 +1,15 @@
-use crate::PaginateBuilder;
+use crate::builder::{
+    ArgBuilder, 
+    ProductOrderBookParams, 
+    PaginatedParams, 
+    NoOptionalParams
+};
 use chrono::{offset::TimeZone, DateTime};
 use reqwest::{Client, Error, Url};
 use serde_json::Value;
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
-#[derive(Debug)]
 pub struct AuthenticatedClient {
     public: PublicClient,
 }
@@ -26,7 +30,6 @@ impl AuthenticatedClient {
     }
 }
 
-#[derive(Debug)]
 pub struct PublicClient {
     client: Client,
     url: Url,
@@ -52,9 +55,9 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn get_products(&self) -> Result<Value, Error> {
+    pub fn get_products(&self) -> ArgBuilder<NoOptionalParams> {
         let url = self.url.join("/products").unwrap();
-        self.client.get(url).send().await?.json().await
+        ArgBuilder::new(self.client.get(url), NoOptionalParams)
     }
     /// # Example
     ///
@@ -69,15 +72,10 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn get_product_order_book(
-        &self,
-        product_id: &str,
-        level: u32,
-    ) -> Result<Value, Error> {
+    pub fn get_product_order_book(&self, product_id: &str) -> ArgBuilder<ProductOrderBookParams> {
         let endpoint = format!("/products/{}/book", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        let query = &[("level", &level.to_string()[..])];
-        self.client.get(url).query(query).send().await?.json().await
+        ArgBuilder::new(self.client.get(url), ProductOrderBookParams { level: None })
     }
     /// # Example
     ///
@@ -115,10 +113,10 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_trades(&self, product_id: &str) -> PaginateBuilder {
+    pub fn get_trades(&self, product_id: &str) -> ArgBuilder<PaginatedParams> {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        PaginateBuilder::new(self.client.clone(), url.clone())
+        ArgBuilder::new(self.client.get(url), PaginatedParams { limit: None, before: None, after: None })
     }
     /// # Example
     ///

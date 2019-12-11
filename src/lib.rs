@@ -2,6 +2,7 @@
 
 mod stream;
 mod client;
+pub mod builder;
 
-pub use self::stream::{Json, PaginateBuilder};
+pub use self::stream::{Json};
 pub use self::client::{PublicClient, SANDBOX_URL};
