@@ -5,7 +5,7 @@ use futures::{
     task::{Context, Poll},
 };
 use reqwest::{Error, Response};
-use crate::builder::PaginateParams;
+use crate::builder::PaginateArgs;
 use reqwest::RequestBuilder;
 use serde_json::Value;
 
@@ -15,17 +15,17 @@ enum State {
 }
 
 type ResponseFuture = BoxFuture<'static, Result<Response, Error>>;
-pub type Json = BoxStream<'static, Result<Value, Error>>;
+pub type Pages = BoxStream<'static, Result<Value, Error>>;
 
 pub(super) struct Paginate {
     in_flight: ResponseFuture,
     request_builder: RequestBuilder,
-    params: PaginateParams,
+    params: PaginateArgs,
     state: State
 }
 
 impl Paginate {
-    pub(super) fn new(request_builder: RequestBuilder, params: PaginateParams) -> Self {
+    pub(super) fn new(request_builder: RequestBuilder, params: PaginateArgs) -> Self {
 
         Self {
             in_flight: request_builder.try_clone().unwrap().query(&params).send().boxed(),
@@ -35,7 +35,7 @@ impl Paginate {
         }
     }
 
-    pub(super) fn json(self) -> Json {
+    pub(super) fn pages(self) -> Pages {
         self.then(|x| async move { x?.json::<Value>().await })
             .boxed()
     }

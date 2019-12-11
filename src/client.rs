@@ -1,5 +1,5 @@
 use crate::builder::{
-    ArgBuilder, HistoricRatesParams, NoOptionalParams, PaginateParams, ProductOrderBookParams,
+    ArgBuilder, CandleArgs, NoArgs, PaginateArgs, BookArgs,
 };
 use reqwest::{Client, Url};
 
@@ -50,9 +50,9 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_products(&self) -> ArgBuilder<NoOptionalParams> {
+    pub fn get_products(&self) -> ArgBuilder<NoArgs> {
         let url = self.url.join("/products").unwrap();
-        ArgBuilder::new(self.client.get(url), NoOptionalParams)
+        ArgBuilder::new(self.client.get(url), NoArgs)
     }
     /// # Example
     ///
@@ -67,10 +67,10 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_order_book(&self, product_id: &str) -> ArgBuilder<ProductOrderBookParams> {
+    pub fn get_product_order_book(&self, product_id: &str) -> ArgBuilder<BookArgs> {
         let endpoint = format!("/products/{}/book", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.get(url), ProductOrderBookParams { level: None })
+        ArgBuilder::new(self.client.get(url), BookArgs { level: None })
     }
     /// # Example
     ///
@@ -85,10 +85,10 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_ticker(&self, product_id: &str) -> ArgBuilder<NoOptionalParams> {
+    pub fn get_product_ticker(&self, product_id: &str) -> ArgBuilder<NoArgs> {
         let endpoint = format!("/products/{}/ticker", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.get(url), NoOptionalParams)
+        ArgBuilder::new(self.client.get(url), NoArgs)
     }
     /// # Example
     ///
@@ -108,12 +108,12 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_trades(&self, product_id: &str) -> ArgBuilder<PaginateParams> {
+    pub fn get_trades(&self, product_id: &str) -> ArgBuilder<PaginateArgs> {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
         ArgBuilder::new(
             self.client.get(url),
-            PaginateParams {
+            PaginateArgs {
                 limit: None,
                 before: None,
                 after: None,
@@ -140,12 +140,12 @@ impl PublicClient {
         &self,
         product_id: &str,
         granularity: u32,
-    ) -> ArgBuilder<HistoricRatesParams> {
+    ) -> ArgBuilder<CandleArgs> {
         let endpoint = format!("/products/{}/candles", product_id);
         let url = self.url.join(&endpoint).unwrap();
         ArgBuilder::new(
             self.client.get(url),
-            HistoricRatesParams {
+            CandleArgs {
                 start: None,
                 end: None,
                 granularity: Some(granularity.to_string()),
@@ -165,10 +165,10 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_24hr_stats(&self, product_id: &str) -> ArgBuilder<NoOptionalParams> {
+    pub fn get_24hr_stats(&self, product_id: &str) -> ArgBuilder<NoArgs> {
         let endpoint = format!("/products/{}/stats", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.get(url), NoOptionalParams)
+        ArgBuilder::new(self.client.get(url), NoArgs)
     }
     /// # Example
     ///
@@ -183,9 +183,9 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_currencies(&self) -> ArgBuilder<NoOptionalParams> {
+    pub fn get_currencies(&self) -> ArgBuilder<NoArgs> {
         let url = self.url.join("/currencies").unwrap();
-        ArgBuilder::new(self.client.get(url), NoOptionalParams)
+        ArgBuilder::new(self.client.get(url), NoArgs)
     }
     /// # Example
     ///
@@ -200,8 +200,8 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_time(&self) -> ArgBuilder<NoOptionalParams> {
+    pub fn get_time(&self) -> ArgBuilder<NoArgs> {
         let url = self.url.join("/time").unwrap();
-        ArgBuilder::new(self.client.get(url), NoOptionalParams)
+        ArgBuilder::new(self.client.get(url), NoArgs)
     }
 }

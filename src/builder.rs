@@ -1,4 +1,4 @@
-use crate::stream::{Json, Paginate};
+use crate::stream::{Pages, Paginate};
 use chrono::{offset::TimeZone, DateTime};
 use reqwest::Error;
 use reqwest::RequestBuilder;
@@ -6,22 +6,22 @@ use serde::Serialize;
 use serde_json::Value;
 
 #[derive(Serialize)]
-pub struct NoOptionalParams;
+pub struct NoArgs;
 
 #[derive(Serialize)]
-pub struct ProductOrderBookParams {
+pub struct BookArgs {
     pub level: Option<String>,
 }
 
 #[derive(Serialize)]
-pub struct HistoricRatesParams {
+pub struct CandleArgs {
     pub start: Option<String>,
     pub end: Option<String>,
     pub granularity: Option<String>,
 }
 
 #[derive(Serialize)]
-pub struct PaginateParams {
+pub struct PaginateArgs {
     pub limit: Option<String>,
     pub before: Option<String>,
     pub after: Option<String>,
@@ -50,14 +50,14 @@ impl<T: Serialize> ArgBuilder<T> {
     }
 }
 
-impl ArgBuilder<ProductOrderBookParams> {
+impl ArgBuilder<BookArgs> {
     pub fn level(mut self, value: u32) -> Self {
         self.serializable.level = Some(value.to_string());
         self
     }
 }
 
-impl ArgBuilder<PaginateParams> {
+impl ArgBuilder<PaginateArgs> {
     pub fn limit(mut self, value: u32) -> Self {
         self.serializable.limit = Some(value.to_string());
         self
@@ -75,12 +75,12 @@ impl ArgBuilder<PaginateParams> {
         self
     }
 
-    pub fn paginate(self) -> Json {
-        Paginate::new(self.request_builder, self.serializable).json()
+    pub fn paginate(self) -> Pages {
+        Paginate::new(self.request_builder, self.serializable).pages()
     }
 }
 
-impl ArgBuilder<HistoricRatesParams> {
+impl ArgBuilder<CandleArgs> {
     pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self
     where
         Tz::Offset: core::fmt::Display,
