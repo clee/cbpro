@@ -1,18 +1,23 @@
 use crate::builder::{
-    ArgBuilder, CandleArgs, NoArgs, PaginateArgs, BookArgs,
+    ArgBuilder, CandleArgs, NoArgs, PaginateArgs, BookArgs, Auth
 };
-use reqwest::{Client, Url};
+use reqwest::{
+    Client, 
+    Url
+};
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
-pub struct AuthenticatedClient {
+pub struct AuthenticatedClient<'a> {
+    auth: Auth<'a>,
     public: PublicClient,
 }
 
-impl AuthenticatedClient {
-    fn new(url: &str) -> Self {
+impl<'a> AuthenticatedClient<'a> {
+    pub fn new(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> Self {
         Self {
-            public: PublicClient::new(url),
+            auth: Auth { key, pass, secret },
+            public: PublicClient::new(url)
         }
     }
 
@@ -22,6 +27,11 @@ impl AuthenticatedClient {
 
     fn url(&self) -> &Url {
         &self.public.url
+    }
+
+    pub fn list_accounts(&self) -> ArgBuilder<NoArgs> {
+        let url = self.url().join("/accounts").unwrap();
+        ArgBuilder::new(self.client().clone(), self.client().get(url), NoArgs, Some(self.auth))
     }
 }
 
@@ -52,7 +62,7 @@ impl PublicClient {
     /// ```
     pub fn get_products(&self) -> ArgBuilder<NoArgs> {
         let url = self.url.join("/products").unwrap();
-        ArgBuilder::new(self.client.get(url), NoArgs)
+        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
     }
     /// # Example
     ///
@@ -70,7 +80,7 @@ impl PublicClient {
     pub fn get_product_order_book(&self, product_id: &str) -> ArgBuilder<BookArgs> {
         let endpoint = format!("/products/{}/book", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.get(url), BookArgs { level: None })
+        ArgBuilder::new(self.client.clone(), self.client.get(url), BookArgs { level: None }, None)
     }
     /// # Example
     ///
@@ -88,7 +98,7 @@ impl PublicClient {
     pub fn get_product_ticker(&self, product_id: &str) -> ArgBuilder<NoArgs> {
         let endpoint = format!("/products/{}/ticker", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.get(url), NoArgs)
+        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
     }
     /// # Example
     ///
@@ -112,12 +122,14 @@ impl PublicClient {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
         ArgBuilder::new(
+            self.client.clone(),
             self.client.get(url),
             PaginateArgs {
                 limit: None,
                 before: None,
                 after: None,
             },
+            None
         )
     }
     /// # Example
@@ -144,12 +156,14 @@ impl PublicClient {
         let endpoint = format!("/products/{}/candles", product_id);
         let url = self.url.join(&endpoint).unwrap();
         ArgBuilder::new(
+            self.client.clone(),
             self.client.get(url),
             CandleArgs {
                 start: None,
                 end: None,
                 granularity: Some(granularity.to_string()),
             },
+            None
         )
     }
     /// # Example
@@ -168,7 +182,7 @@ impl PublicClient {
     pub fn get_24hr_stats(&self, product_id: &str) -> ArgBuilder<NoArgs> {
         let endpoint = format!("/products/{}/stats", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.get(url), NoArgs)
+        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
     }
     /// # Example
     ///
@@ -185,7 +199,7 @@ impl PublicClient {
     /// ```
     pub fn get_currencies(&self) -> ArgBuilder<NoArgs> {
         let url = self.url.join("/currencies").unwrap();
-        ArgBuilder::new(self.client.get(url), NoArgs)
+        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
     }
     /// # Example
     ///
@@ -202,6 +216,6 @@ impl PublicClient {
     /// ```
     pub fn get_time(&self) -> ArgBuilder<NoArgs> {
         let url = self.url.join("/time").unwrap();
-        ArgBuilder::new(self.client.get(url), NoArgs)
+        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
     }
 }
