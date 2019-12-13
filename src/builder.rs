@@ -1,136 +1,163 @@
 use crate::stream::{Pages, Paginate};
-use chrono::{offset::TimeZone, DateTime};
-use reqwest::Error;
-use reqwest::{RequestBuilder, Client};
-use sha2::Sha256;
-use hmac::{Hmac, Mac};
 use chrono::offset::Utc;
+use chrono::{offset::TimeZone, DateTime};
+use hmac::{Hmac, Mac};
+use reqwest::Error;
+use reqwest::{Client, Request};
 use serde::Serialize;
 use serde_json::Value;
-
-type HmacSha256 = Hmac<Sha256>;
+use sha2::Sha256;
 
 #[derive(Copy, Clone)]
 pub(super) struct Auth<'a> {
     pub key: &'a str,
     pub pass: &'a str,
-    pub secret: &'a str
+    pub secret: &'a str,
 }
 
 #[derive(Serialize)]
-pub struct NoArgs;
+pub struct EmptyQuery;
 
 #[derive(Serialize)]
-pub struct BookArgs {
+pub struct BookQuery {
     pub level: Option<String>,
 }
 
 #[derive(Serialize)]
-pub struct CandleArgs {
+pub struct CandleQuery {
     pub start: Option<String>,
     pub end: Option<String>,
     pub granularity: Option<String>,
 }
 
 #[derive(Serialize)]
-pub struct PaginateArgs {
+pub struct PaginateQuery {
     pub limit: Option<String>,
     pub before: Option<String>,
     pub after: Option<String>,
 }
 
-pub struct ArgBuilder<'a, T: Serialize> {
-    client: Client,
-    request_builder: RequestBuilder,
-    serializable: T,
-    auth: Option<Auth<'a>>
+type HmacSha256 = Hmac<Sha256>;
+
+pub(super) fn apply_query<T: Serialize>(req: &mut Request, query: &T) {
+    // This function only exist because reqwest::RequestBuilder::new() is private (insert sad face)
+    let url = req.url_mut();
+    let mut pairs = url.query_pairs_mut();
+    let serializer = serde_urlencoded::Serializer::new(&mut pairs);
+    query.serialize(serializer).unwrap();
 }
 
-impl<'a, T: Serialize> ArgBuilder<'a, T> {
-    pub(super) fn new(client: Client, request_builder: reqwest::RequestBuilder, serializable: T, auth: Option<Auth<'a>>) -> Self {
+pub struct QueryBuilder<'a, T: Serialize> {
+    client: Client,
+    request: Request,
+    query: T,
+    auth: Option<Auth<'a>>,
+}
+
+impl<'a, T: Serialize> QueryBuilder<'a, T> {
+    pub(super) fn new(
+        client: Client,
+        request: Request,
+        query: T,
+        auth: Option<Auth<'a>>,
+    ) -> Self {
         Self {
             client,
-            request_builder,
-            serializable,
-            auth
+            request,
+            query,
+            auth,
         }
     }
 
-    pub async fn json(self) -> Result<Value, Error> {
+    fn sign_request(&self) -> Request {
+        let mut request = self.request.try_clone().unwrap();
+
         if let Some(auth) = self.auth {
-            let mut request = self.request_builder.query(&self.serializable).build()?;
             let Auth { key, pass, secret } = auth;
 
             let timestamp = Utc::now().timestamp().to_string();
             let method = request.method().as_str();
             let path = request.url().path();
-            let hmac_key = base64::decode(&secret).unwrap();
+            let hmac_key = base64::decode(secret).unwrap();
 
             let message = if let Some(body) = request.body() {
-                timestamp.clone() + method + path + std::str::from_utf8(body.as_bytes().unwrap()).unwrap()
+                timestamp.clone()
+                    + method
+                    + path
+                    + std::str::from_utf8(body.as_bytes().unwrap()).unwrap()
             } else {
                 timestamp.clone() + method + path
             };
 
             let mut mac = HmacSha256::new_varkey(&hmac_key).unwrap();
             mac.input(message.as_bytes());
-            
             let signature = mac.result().code();
             let b64_signature = base64::encode(&signature);
 
-            request.headers_mut().insert("CB-ACCESS-KEY", key.parse().unwrap());
-            request.headers_mut().insert("CB-ACCESS-PASSPHRASE", pass.parse().unwrap());
-            request.headers_mut().insert("CB-ACCESS-TIMESTAMP", (&timestamp[..]).parse().unwrap());
-            request.headers_mut().insert("CB-ACCESS-SIGN", (&b64_signature[..]).parse().unwrap());
+            request
+                .headers_mut()
+                .insert("CB-ACCESS-KEY", key.parse().unwrap());
+            request
+                .headers_mut()
+                .insert("CB-ACCESS-PASSPHRASE", pass.parse().unwrap());
+            request
+                .headers_mut()
+                .insert("CB-ACCESS-TIMESTAMP", (&timestamp[..]).parse().unwrap());
+            request
+                .headers_mut()
+                .insert("CB-ACCESS-SIGN", (&b64_signature[..]).parse().unwrap());
 
-            return self.client.execute(request).await?.json().await
+            apply_query(&mut request, &self.query);
+            return request
         }
-        self.request_builder
-        .query(&self.serializable)
-        .send()
-        .await?
-        .json()
-        .await
+
+        apply_query(&mut request, &self.query);
+        request
+    }
+
+    pub async fn json(self) -> Result<Value, Error> {
+        self.client.execute(self.sign_request()).await?.json().await
     }
 }
 
-impl<'a> ArgBuilder<'a, BookArgs> {
+impl<'a> QueryBuilder<'a, BookQuery> {
     pub fn level(mut self, value: u32) -> Self {
-        self.serializable.level = Some(value.to_string());
+        self.query.level = Some(value.to_string());
         self
     }
 }
 
-impl<'a> ArgBuilder<'a, PaginateArgs> {
+impl<'a> QueryBuilder<'a, PaginateQuery> {
     pub fn limit(mut self, value: u32) -> Self {
-        self.serializable.limit = Some(value.to_string());
+        self.query.limit = Some(value.to_string());
         self
     }
 
     pub fn before(mut self, value: &str) -> Self {
-        self.serializable.before = Some(value.to_string());
-        self.serializable.after = None;
+        self.query.before = Some(value.to_string());
+        self.query.after = None;
         self
     }
 
     pub fn after(mut self, value: &str) -> Self {
-        self.serializable.after = Some(value.to_string());
-        self.serializable.before = None;
+        self.query.after = Some(value.to_string());
+        self.query.before = None;
         self
     }
 
     pub fn paginate(self) -> Pages {
-        Paginate::new(self.request_builder, self.serializable).pages()
+        let request = self.sign_request();
+        Paginate::new(self.client, request, self.query).pages()
     }
 }
 
-impl<'a> ArgBuilder<'a, CandleArgs> {
+impl<'a> QueryBuilder<'a, CandleQuery> {
     pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self
     where
         Tz::Offset: core::fmt::Display,
     {
-        self.serializable.start = Some(start.to_rfc3339());
-        self.serializable.end = Some(end.to_rfc3339());
+        self.query.start = Some(start.to_rfc3339());
+        self.query.end = Some(end.to_rfc3339());
         self
     }
 }

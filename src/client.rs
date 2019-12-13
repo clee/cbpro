@@ -1,10 +1,5 @@
-use crate::builder::{
-    ArgBuilder, CandleArgs, NoArgs, PaginateArgs, BookArgs, Auth
-};
-use reqwest::{
-    Client, 
-    Url
-};
+use crate::builder::{QueryBuilder, Auth, BookQuery, CandleQuery, EmptyQuery, PaginateQuery};
+use reqwest::{Client, Url};
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
@@ -17,7 +12,7 @@ impl<'a> AuthenticatedClient<'a> {
     pub fn new(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> Self {
         Self {
             auth: Auth { key, pass, secret },
-            public: PublicClient::new(url)
+            public: PublicClient::new(url),
         }
     }
 
@@ -29,9 +24,18 @@ impl<'a> AuthenticatedClient<'a> {
         &self.public.url
     }
 
-    pub fn list_accounts(&self) -> ArgBuilder<NoArgs> {
+    pub fn public(&self) -> &PublicClient {
+        &self.public
+    }
+
+    pub fn list_accounts(&self) -> QueryBuilder<EmptyQuery> {
         let url = self.url().join("/accounts").unwrap();
-        ArgBuilder::new(self.client().clone(), self.client().get(url), NoArgs, Some(self.auth))
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            EmptyQuery,
+            Some(self.auth),
+        )
     }
 }
 
@@ -60,9 +64,14 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_products(&self) -> ArgBuilder<NoArgs> {
+    pub fn get_products(&self) -> QueryBuilder<EmptyQuery> {
         let url = self.url.join("/products").unwrap();
-        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
+        QueryBuilder::new(
+            self.client.clone(),
+            self.client.get(url).build().unwrap(),
+            EmptyQuery,
+            None,
+        )
     }
     /// # Example
     ///
@@ -77,10 +86,15 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_order_book(&self, product_id: &str) -> ArgBuilder<BookArgs> {
+    pub fn get_product_order_book(&self, product_id: &str) -> QueryBuilder<BookQuery> {
         let endpoint = format!("/products/{}/book", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.clone(), self.client.get(url), BookArgs { level: None }, None)
+        QueryBuilder::new(
+            self.client.clone(),
+            self.client.get(url).build().unwrap(),
+            BookQuery { level: None },
+            None,
+        )
     }
     /// # Example
     ///
@@ -95,10 +109,15 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_ticker(&self, product_id: &str) -> ArgBuilder<NoArgs> {
+    pub fn get_product_ticker(&self, product_id: &str) -> QueryBuilder<EmptyQuery> {
         let endpoint = format!("/products/{}/ticker", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
+        QueryBuilder::new(
+            self.client.clone(),
+            self.client.get(url).build().unwrap(),
+            EmptyQuery,
+            None,
+        )
     }
     /// # Example
     ///
@@ -118,18 +137,18 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_trades(&self, product_id: &str) -> ArgBuilder<PaginateArgs> {
+    pub fn get_trades(&self, product_id: &str) -> QueryBuilder<PaginateQuery> {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(
+        QueryBuilder::new(
             self.client.clone(),
-            self.client.get(url),
-            PaginateArgs {
+            self.client.get(url).build().unwrap(),
+            PaginateQuery {
                 limit: None,
                 before: None,
                 after: None,
             },
-            None
+            None,
         )
     }
     /// # Example
@@ -148,22 +167,18 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_historic_rates(
-        &self,
-        product_id: &str,
-        granularity: u32,
-    ) -> ArgBuilder<CandleArgs> {
+    pub fn get_historic_rates(&self, product_id: &str, granularity: u32) -> QueryBuilder<CandleQuery> {
         let endpoint = format!("/products/{}/candles", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(
+        QueryBuilder::new(
             self.client.clone(),
-            self.client.get(url),
-            CandleArgs {
+            self.client.get(url).build().unwrap(),
+            CandleQuery {
                 start: None,
                 end: None,
                 granularity: Some(granularity.to_string()),
             },
-            None
+            None,
         )
     }
     /// # Example
@@ -179,10 +194,15 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_24hr_stats(&self, product_id: &str) -> ArgBuilder<NoArgs> {
+    pub fn get_24hr_stats(&self, product_id: &str) -> QueryBuilder<EmptyQuery> {
         let endpoint = format!("/products/{}/stats", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
+        QueryBuilder::new(
+            self.client.clone(),
+            self.client.get(url).build().unwrap(),
+            EmptyQuery,
+            None,
+        )
     }
     /// # Example
     ///
@@ -197,9 +217,14 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_currencies(&self) -> ArgBuilder<NoArgs> {
+    pub fn get_currencies(&self) -> QueryBuilder<EmptyQuery> {
         let url = self.url.join("/currencies").unwrap();
-        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
+        QueryBuilder::new(
+            self.client.clone(),
+            self.client.get(url).build().unwrap(),
+            EmptyQuery,
+            None,
+        )
     }
     /// # Example
     ///
@@ -214,8 +239,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_time(&self) -> ArgBuilder<NoArgs> {
+    pub fn get_time(&self) -> QueryBuilder<EmptyQuery> {
         let url = self.url.join("/time").unwrap();
-        ArgBuilder::new(self.client.clone(), self.client.get(url), NoArgs, None)
+        QueryBuilder::new(
+            self.client.clone(),
+            self.client.get(url).build().unwrap(),
+            EmptyQuery,
+            None,
+        )
     }
 }

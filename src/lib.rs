@@ -6,4 +6,4 @@ pub mod builder;
 
 pub use self::stream::{Pages};
 pub use self::client::{PublicClient, AuthenticatedClient, SANDBOX_URL};
-pub use self::builder::{ArgBuilder};
+pub use self::builder::{QueryBuilder};

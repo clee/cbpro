@@ -4,9 +4,9 @@ use futures::{
     stream::{BoxStream, Stream, StreamExt},
     task::{Context, Poll},
 };
-use reqwest::{Error, Response};
-use crate::builder::PaginateArgs;
-use reqwest::RequestBuilder;
+use reqwest::{Error, Response, Client};
+use crate::builder::{PaginateQuery, apply_query};
+use reqwest::Request;
 use serde_json::Value;
 
 enum State {
@@ -19,18 +19,19 @@ pub type Pages = BoxStream<'static, Result<Value, Error>>;
 
 pub(super) struct Paginate {
     in_flight: ResponseFuture,
-    request_builder: RequestBuilder,
-    params: PaginateArgs,
+    client: Client,
+    request: Request,
+    query: PaginateQuery,
     state: State
 }
 
 impl Paginate {
-    pub(super) fn new(request_builder: RequestBuilder, params: PaginateArgs) -> Self {
-
+    pub(super) fn new(client: Client, request: Request, query: PaginateQuery) -> Self {
         Self {
-            in_flight: request_builder.try_clone().unwrap().query(&params).send().boxed(),
-            request_builder,
-            params,
+            in_flight: client.execute(request.try_clone().unwrap()).boxed(),
+            client,
+            request,
+            query,
             state: State::Start,
         }
     }
@@ -57,20 +58,22 @@ impl Stream for Paginate {
             Poll::Pending => return Poll::Pending,
         };
 
-        if let (Some(after), None) = (res.headers().get("cb-after"), &self.params.before) {
-            self.params.after = Some(after.to_str().unwrap().to_string());
+        if let (Some(after), None) = (res.headers().get("cb-after"), &self.query.before) {
+            self.query.after = Some(after.to_str().unwrap().to_string());
+            let mut request = self.request.try_clone().unwrap();
+            request.url_mut().set_query(None);
 
-            self.in_flight = self.request_builder.try_clone().unwrap()
-                .query(&self.params)
-                .send()
-                .boxed();
+            apply_query(&mut request, &self.query);
+            self.in_flight = self.client.execute(request).boxed()
+
         } else if let Some(before) = res.headers().get("cb-before") {
-            self.params.before = Some(before.to_str().unwrap().to_string());
+            self.query.before = Some(before.to_str().unwrap().to_string());
+            let mut request = self.request.try_clone().unwrap();
+            request.url_mut().set_query(None);
 
-            self.in_flight = self.request_builder.try_clone().unwrap()
-                .query(&self.params)
-                .send()
-                .boxed();
+            apply_query(&mut request, &self.query);
+            self.in_flight = self.client.execute(request).boxed()
+
         } else {
             self.state = State::Stop;
         }
