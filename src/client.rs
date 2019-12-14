@@ -1,4 +1,12 @@
-use crate::builder::{QueryBuilder, Auth, BookQuery, CandleQuery, EmptyQuery, PaginateQuery};
+use crate::builder::{
+    QueryBuilder, 
+    Auth, 
+    BookQuery, 
+    CandleQuery, 
+    EmptyQuery, 
+    PaginateQuery,
+    LimitOrderQuery
+};
 use reqwest::{Client, Url};
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
@@ -37,6 +45,72 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+
+    pub fn get_account(&self, account_id: &str) -> QueryBuilder<EmptyQuery> {
+        let endpoint = format!("/accounts/{}", account_id);
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            EmptyQuery,
+            Some(self.auth),
+        )
+    }
+    
+    pub fn get_account_history(&self, account_id: &str) -> QueryBuilder<PaginateQuery> {
+        let endpoint = format!("/accounts/{}/ledger", account_id);
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            PaginateQuery {
+                limit: None,
+                before: None,
+                after: None,
+            },
+            Some(self.auth),
+        )
+    }
+
+    pub fn get_account_holds(&self, account_id: &str) -> QueryBuilder<PaginateQuery> {
+        let endpoint = format!("/accounts/{}/holds", account_id);
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            PaginateQuery {
+                limit: None,
+                before: None,
+                after: None,
+            },
+            Some(self.auth),
+        )
+    }
+
+    pub fn place_limit_order(&self, product_id: &str, side: &str, price: f64, size: f64) -> QueryBuilder<LimitOrderQuery> {
+        let url = self.url().join("/orders").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().post(url).build().unwrap(),
+            LimitOrderQuery {
+                client_oid: None,
+                order_type: None,
+                side: Some(side.to_string()),
+                product_id: Some(product_id.to_string()),
+                stp: None,
+                stop: None,
+                stop_price: None,
+                price: Some(price.to_string()),
+                size: Some(size.to_string()),
+                time_in_force: None,
+                cancel_after: None,
+                post_only: None
+            },
+            Some(self.auth),
+        )
+    }
+
+    
 }
 
 pub struct PublicClient {
