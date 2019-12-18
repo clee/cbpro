@@ -24,6 +24,19 @@ pub struct BookQuery {
 }
 
 #[derive(Serialize)]
+pub struct CancelAllQuery {
+    pub product_id: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct ListOrderQuery {
+    pub product_id: Option<String>,
+    pub limit: Option<String>,
+    pub before: Option<String>,
+    pub after: Option<String>,
+}
+
+#[derive(Serialize)]
 pub struct CandleQuery {
     pub start: Option<String>,
     pub end: Option<String>,
@@ -67,9 +80,6 @@ pub struct MarketOrderQuery {
 
     pub side: Option<String>,
     pub product_id: Option<String>,
-    pub stp: Option<String>,
-    pub stop: Option<String>,
-    pub stop_price: Option<String>,
 
     //market
     pub size: Option<String>,
@@ -79,10 +89,15 @@ pub struct MarketOrderQuery {
 type HmacSha256 = Hmac<Sha256>;
 
 pub(super) fn apply_query<T: Serialize>(req: &mut Request, query: &T) {
-    let url = req.url_mut();
-    let mut pairs = url.query_pairs_mut();
-    let serializer = serde_urlencoded::Serializer::new(&mut pairs);
-    query.serialize(serializer).unwrap();
+    {
+        let url = req.url_mut();
+        let mut pairs = url.query_pairs_mut();
+        let serializer = serde_urlencoded::Serializer::new(&mut pairs);
+        query.serialize(serializer).unwrap();
+    }
+    if let Some("") = req.url().query() {
+        req.url_mut().set_query(None);
+    }
 }
 
 pub(super) fn apply_json<T: Serialize>(req: &mut Request, json: &T) {
@@ -127,18 +142,23 @@ impl<'a, T: Serialize> QueryBuilder<'a, T> {
 
             let timestamp = Utc::now().timestamp().to_string();
             let method = request.method().as_str();
-            let path = request.url().path();
-            let hmac_key = base64::decode(secret).unwrap();
+
+            let path = if let Some(query) = request.url().query() {
+                String::new() + request.url().path() + "?" + query
+            } else {
+                request.url().path().to_string()
+            };
 
             let message = if let Some(body) = request.body() {
                 timestamp.clone()
                     + method
-                    + path
+                    + &path[..]
                     + std::str::from_utf8(body.as_bytes().unwrap()).unwrap()
             } else {
-                timestamp.clone() + method + path
+                timestamp.clone() + method + &path[..]
             };
 
+            let hmac_key = base64::decode(secret).unwrap();
             let mut mac = HmacSha256::new_varkey(&hmac_key).unwrap();
             mac.input(message.as_bytes());
             let signature = mac.result().code();
@@ -148,10 +168,7 @@ impl<'a, T: Serialize> QueryBuilder<'a, T> {
             request.headers_mut().insert("CB-ACCESS-PASSPHRASE", pass.parse().unwrap());
             request.headers_mut().insert("CB-ACCESS-TIMESTAMP", (&timestamp[..]).parse().unwrap());
             request.headers_mut().insert("CB-ACCESS-SIGN", (&b64_signature[..]).parse().unwrap());
-
-            return request
         }
-
         request
     }
 
@@ -207,11 +224,6 @@ impl<'a> QueryBuilder<'a, LimitOrderQuery> {
         self
     }
 
-    pub fn order_type(mut self, value: &str) -> Self {
-        self.query.order_type = Some(value.to_string());
-        self
-    }
-
     pub fn stp(mut self, value: &str) -> Self {
         self.query.stp = Some(value.to_string());
         self
@@ -242,6 +254,49 @@ impl<'a> QueryBuilder<'a, LimitOrderQuery> {
 
     pub fn post_only(mut self, value: bool) -> Self {
         self.query.post_only = Some(value.to_string());
+        self
+    }
+}
+
+impl<'a> QueryBuilder<'a, MarketOrderQuery> {
+    pub fn client_oid(mut self, value: &'a str) -> Self {
+        self.query.client_oid = Some(value.to_string());
+        self
+    }
+
+    pub fn funds(mut self, value: f64) -> Self {
+        self.query.funds = Some(value.to_string());
+        self
+    }
+}
+
+impl<'a> QueryBuilder<'a, CancelAllQuery> {
+    pub fn product_id(mut self, value: &'a str) -> Self {
+        self.query.product_id = Some(value.to_string());
+        self
+    }
+}
+
+impl<'a> QueryBuilder<'a, ListOrderQuery> {
+    pub fn limit(mut self, value: u32) -> Self {
+        self.query.limit = Some(value.to_string());
+        self
+    }
+
+    pub fn before(mut self, value: &str) -> Self {
+        self.query.before = Some(value.to_string());
+        self.query.after = None;
+        self
+    }
+
+    pub fn after(mut self, value: &str) -> Self {
+        self.query.after = Some(value.to_string());
+        self.query.before = None;
+        self
+    }
+
+    pub fn product_id(mut self, value: &str) -> Self {
+        self.query.product_id = Some(value.to_string());
         self
     }
 }

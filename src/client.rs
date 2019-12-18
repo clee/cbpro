@@ -5,7 +5,10 @@ use crate::builder::{
     CandleQuery, 
     EmptyQuery, 
     PaginateQuery,
-    LimitOrderQuery
+    LimitOrderQuery,
+    MarketOrderQuery,
+    CancelAllQuery,
+    ListOrderQuery
 };
 use reqwest::{Client, Url};
 
@@ -106,6 +109,66 @@ impl<'a> AuthenticatedClient<'a> {
                 cancel_after: None,
                 post_only: None
             },
+            Some(self.auth),
+        )
+    }
+
+    pub fn place_market_order(&self, product_id: &str, side: &str, size: f64) -> QueryBuilder<MarketOrderQuery> {
+        let url = self.url().join("/orders").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().post(url).build().unwrap(),
+            MarketOrderQuery {
+                client_oid: None,
+                order_type: Some("market".to_string()),
+                side: Some(side.to_string()),
+                product_id: Some(product_id.to_string()),
+                size: Some(size.to_string()),
+                funds: None,
+            },
+            Some(self.auth),
+        )
+    }
+    
+    pub fn cancel_order(&self, order_id: &str) -> QueryBuilder<EmptyQuery> {
+        let endpoint = format!("/orders/{}", order_id);
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().delete(url).build().unwrap(),
+            EmptyQuery,
+            Some(self.auth),
+        )
+    }
+
+    pub fn cancel_by_client_oid(&self, client_oid: &str) -> QueryBuilder<EmptyQuery> {
+        let endpoint = format!("/orders/client:{}", client_oid);
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().delete(url).build().unwrap(),
+            EmptyQuery,
+            Some(self.auth),
+        )
+    }
+
+    pub fn cancel_all(&self) -> QueryBuilder<CancelAllQuery> {
+        let url = self.url().join("/orders").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().delete(url).build().unwrap(),
+            CancelAllQuery { product_id: None },
+            Some(self.auth),
+        )
+    }
+
+    pub fn list_orders(&self, status: &[&str]) -> QueryBuilder<ListOrderQuery> {
+        let url = self.url().join("/orders").unwrap();
+        let status: Vec<_> = status.iter().map(|x| ("status", x)).collect();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).query(&status).build().unwrap(),
+            ListOrderQuery { product_id: None, limit: None, before: None, after: None },
             Some(self.auth),
         )
     }
