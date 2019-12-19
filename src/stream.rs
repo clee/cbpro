@@ -5,7 +5,7 @@ use futures::{
     task::{Context, Poll},
 };
 use reqwest::{Error, Response, Client};
-use crate::builder::{PaginateQuery, apply_query};
+use crate::builder_v2::{Paginated, apply_query, Params};
 use reqwest::Request;
 use serde_json::Value;
 
@@ -15,18 +15,18 @@ enum State {
 }
 
 type ResponseFuture = BoxFuture<'static, Result<Response, Error>>;
-pub type Pages = BoxStream<'static, Result<Value, Error>>;
+pub type Pages<'a> = BoxStream<'a, Result<Value, Error>>;
 
-pub(super) struct Paginate {
+pub(super) struct Paginate<T> {
     in_flight: ResponseFuture,
     client: Client,
     request: Request,
-    query: PaginateQuery,
+    query: T,
     state: State
 }
 
-impl Paginate {
-    pub(super) fn new(client: Client, request: Request, query: PaginateQuery) -> Self {
+impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> Paginate<T> {
+    pub(super) fn new(client: Client, request: Request, query: T) -> Self {
         Self {
             in_flight: client.execute(request.try_clone().unwrap()).boxed(),
             client,
@@ -36,13 +36,28 @@ impl Paginate {
         }
     }
 
-    pub(super) fn pages(self) -> Pages {
-        self.then(|x| async move { x?.json::<Value>().await })
-            .boxed()
+    fn in_flight(self: Pin<&mut Self>) -> Pin<&mut ResponseFuture> {
+        unsafe { Pin::map_unchecked_mut(self, |x| &mut x.in_flight) }
+    }
+
+    fn query_mut(self: Pin<&mut Self>) -> &mut T {
+        unsafe { &mut Pin::get_unchecked_mut(self).query }
+    }
+
+    fn state_mut(self: Pin<&mut Self>) -> &mut State {
+        unsafe { &mut Pin::get_unchecked_mut(self).state }
+    }
+
+    fn query(self: Pin<&mut Self>) -> &T {
+        unsafe { &Pin::get_unchecked_mut(self).query }
+    }
+
+    pub(super) fn pages(self) -> Pages<'a> {
+        self.then(|x| async move { x?.json::<Value>().await }).boxed()
     }
 }
 
-impl Stream for Paginate {
+impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> Stream for Paginate<T> {
     type Item = Result<Response, Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -50,7 +65,7 @@ impl Stream for Paginate {
             return Poll::Ready(None);
         }
 
-        let res = match self.in_flight.poll_unpin(cx) {
+        let res = match self.as_mut().in_flight().poll_unpin(cx) {
             Poll::Ready(Err(e)) => {
                 return Poll::Ready(Some(Err(e)));
             }
@@ -58,24 +73,24 @@ impl Stream for Paginate {
             Poll::Pending => return Poll::Pending,
         };
 
-        if let (Some(after), None) = (res.headers().get("cb-after"), &self.query.before) {
-            self.query.after = Some(after.to_str().unwrap().to_string());
+        if let (Some(after), None) = (res.headers().get("cb-after"), &self.query.params().before) {
+            self.as_mut().query_mut().set_after(after.to_str().unwrap().to_string());
             let mut request = self.request.try_clone().unwrap();
             request.url_mut().set_query(None);
 
-            apply_query(&mut request, &self.query);
-            self.in_flight = self.client.execute(request).boxed()
+            apply_query(&mut request, self.query.params());
+            *self.as_mut().in_flight() = self.client.execute(request).boxed()
 
         } else if let Some(before) = res.headers().get("cb-before") {
-            self.query.before = Some(before.to_str().unwrap().to_string());
+            self.as_mut().query_mut().set_before(before.to_str().unwrap().to_string());
             let mut request = self.request.try_clone().unwrap();
             request.url_mut().set_query(None);
 
-            apply_query(&mut request, &self.query);
-            self.in_flight = self.client.execute(request).boxed()
+            apply_query(&mut request, self.query.params());
+            *self.as_mut().in_flight() = self.client.execute(request).boxed()
 
         } else {
-            self.state = State::Stop;
+            *self.as_mut().state_mut() = State::Stop;
         }
         Poll::Ready(Some(Ok(res)))
     }

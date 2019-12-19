@@ -21,8 +21,8 @@ pub(super) struct Auth<'a> {
 #[derive(Serialize)]
 pub struct CBParams<'a> {
     level: Option<&'a str>,
-    start: Option<&'a str>,
-    end: Option<&'a str>,
+    start: Option<String>,
+    end: Option<String>,
     granularity: Option<&'a str>,
     client_oid: Option<&'a str>,
     #[serde(rename(serialize = "type"))]
@@ -42,8 +42,8 @@ pub struct CBParams<'a> {
     funds: Option<&'a str>,
     //paginate
     limit: Option<&'a str>,
-    before: Option<&'a str>,
-    after: Option<&'a str>,
+    pub(super) before: Option<String>,
+    after: Option<String>,
 }
 
 impl<'a> CBParams<'a> {
@@ -78,8 +78,19 @@ pub trait Params<'a> {
     fn params(&self) -> &CBParams<'a>;
 }
 
+pub trait Paginated<'a> {
+    fn set_limit(&mut self, value: &'a str);
+    fn set_before(&mut self, value: String);
+    fn set_after(&mut self, value: String);
+}
+
 pub trait Book<'a> {
-    fn level(&mut self, value: &'a str);
+    fn set_level(&mut self, value: &'a str);
+}
+
+pub trait Candle<'a> {
+    fn set_start(&mut self, value: String);
+    fn set_end(&mut self, value: String);
 }
 //////////////////////////////////////////////////
 
@@ -88,7 +99,7 @@ pub struct NoParams<'a> {
 }
 
 impl<'a> NoParams<'a> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             params: CBParams::new()
         }
@@ -110,7 +121,7 @@ pub struct BookParams<'a> {
 }
 
 impl<'a> BookParams<'a> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             params: CBParams::new()
         }
@@ -128,10 +139,80 @@ impl<'a> Params<'a> for BookParams<'a> {
 }
 
 impl<'a> Book<'a> for BookParams<'a> {
-    fn level(&mut self, value: &'a str) {
+    fn set_level(&mut self, value: &'a str) {
         self.params_mut().level = Some(value);
     }
 }
+
+pub struct TradeParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> TradeParams<'a> {
+    pub fn new() -> Self {
+        Self {
+            params: CBParams::new()
+        }
+    }
+}
+
+impl<'a> Params<'a> for TradeParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Paginated<'a> for TradeParams<'a> {
+    fn set_limit(&mut self, value: &'a str) {
+        self.params_mut().limit = Some(value);
+    }
+    fn set_before(&mut self, value: String) {
+        self.params_mut().before = Some(value);
+        self.params_mut().after = None;
+    }
+    fn set_after(&mut self, value: String) {
+        self.params_mut().after = Some(value);
+        self.params_mut().before = None;
+    }
+}
+
+pub struct CandleParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> CandleParams<'a> {
+    pub fn new(granularity: &'a str) -> Self {
+        let mut params =  CBParams::new();
+        params.granularity = Some(granularity);
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for CandleParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Candle<'a> for CandleParams<'a> {
+    fn set_start(&mut self, value: String) {
+        self.params_mut().start = Some(value);
+    }
+    fn set_end(&mut self, value: String) {
+        self.params_mut().end = Some(value);
+    }
+}
+//////////////////
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -220,13 +301,47 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
     }
 
     pub async fn json(self) -> Result<Value, Error> {
-        self.client.execute(self.signed_request()).await?.json().await
+        let request = self.signed_request();
+        println!("{:?}", &request.url().query());
+        self.client.execute(request).await?.json().await
     }
 }
 
 impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<'a, T> {
     pub fn level(mut self, value: &'a str) -> Self {
-        self.query.level(value);
+        self.query.set_level(value);
+        self
+    }
+}
+
+impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> QueryBuilder<'a, T> {
+    pub fn limit(mut self, value: &'a str) -> Self {
+        self.query.set_limit(value);
+        self
+    }
+
+    pub fn before(mut self, value: &'a str) -> Self {
+        self.query.set_before(value.to_string());
+        self
+    }
+
+    pub fn after(mut self, value: &'a str) -> Self {
+        self.query.set_after(value.to_string());
+        self
+    }
+
+    pub fn paginate(self) -> Pages<'a> {
+        Paginate::new(self.client.clone(), self.signed_request(), self.query).pages()
+    }
+}
+
+impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<'a, T> {
+    pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self 
+    where
+        Tz::Offset: core::fmt::Display,
+    {
+        self.query.set_start(start.to_rfc3339());
+        self.query.set_end(end.to_rfc3339());
         self
     }
 }

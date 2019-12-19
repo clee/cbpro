@@ -1,28 +1,16 @@
-use crate::builder::{
-    QueryBuilder, 
-    Auth, 
-    BookQuery, 
-    CandleQuery, 
-    EmptyQuery, 
-    PaginateQuery,
-    LimitOrderQuery,
-    MarketOrderQuery,
-    CancelAllQuery,
-    ListOrderQuery
-};
 use reqwest::{Client, Url};
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
 pub struct AuthenticatedClient<'a> {
-    auth: Auth<'a>,
+    auth: crate::builder_v2::Auth<'a>,
     public: PublicClient,
 }
 
 impl<'a> AuthenticatedClient<'a> {
     pub fn new(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> Self {
         Self {
-            auth: Auth { key, pass, secret },
+            auth: crate::builder_v2::Auth { key, pass, secret },
             public: PublicClient::new(url),
         }
     }
@@ -39,17 +27,17 @@ impl<'a> AuthenticatedClient<'a> {
         &self.public
     }
 
-    pub fn list_accounts(&self) -> QueryBuilder<EmptyQuery> {
+    pub fn list_accounts(&self) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::BookParams<'a>> {
         let url = self.url().join("/accounts").unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            EmptyQuery,
+            crate::builder_v2::BookParams::new(),
             Some(self.auth),
         )
     }
 
-    pub fn get_account(&self, account_id: &str) -> QueryBuilder<EmptyQuery> {
+/*     pub fn get_account(&self, account_id: &str) -> QueryBuilder<EmptyQuery> {
         let endpoint = format!("/accounts/{}", account_id);
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
@@ -171,7 +159,7 @@ impl<'a> AuthenticatedClient<'a> {
             ListOrderQuery { product_id: None, limit: None, before: None, after: None },
             Some(self.auth),
         )
-    }
+    } */
 
     
 }
@@ -201,12 +189,12 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_products(&self) -> QueryBuilder<EmptyQuery> {
+    pub fn get_products<'a>(&self) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::NoParams<'a>> {
         let url = self.url.join("/products").unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            EmptyQuery,
+            crate::builder_v2::NoParams::new(),
             None,
         )
     }
@@ -223,13 +211,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_order_book(&self, product_id: &str) -> QueryBuilder<BookQuery> {
+    pub fn get_product_order_book<'a>(&self, product_id: &str) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::BookParams<'a>> {
         let endpoint = format!("/products/{}/book", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            BookQuery { level: None },
+            crate::builder_v2::BookParams::new(),
             None,
         )
     }
@@ -246,13 +234,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_ticker(&self, product_id: &str) -> QueryBuilder<EmptyQuery> {
+    pub fn get_product_ticker<'a>(&self, product_id: &str) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::NoParams<'a>> {
         let endpoint = format!("/products/{}/ticker", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            EmptyQuery,
+            crate::builder_v2::NoParams::new(),
             None,
         )
     }
@@ -274,17 +262,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_trades(&self, product_id: &str) -> QueryBuilder<PaginateQuery> {
+    pub fn get_trades<'a>(&self, product_id: &str) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::TradeParams<'a>> {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            PaginateQuery {
-                limit: None,
-                before: None,
-                after: None,
-            },
+            crate::builder_v2::TradeParams::new(),
             None,
         )
     }
@@ -299,22 +283,18 @@ impl PublicClient {
     /// let end = chrono::offset::Utc::now();
     /// let start = end - chrono::Duration::hours(5);
     ///
-    /// let rates = client.get_historic_rates("BTC-USD", 3600).range(start, end).json().await?;
+    /// let rates = client.get_historic_rates("BTC-USD", "3600").range(start, end).json().await?;
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_historic_rates(&self, product_id: &str, granularity: u32) -> QueryBuilder<CandleQuery> {
+    pub fn get_historic_rates<'a>(&self, product_id: &str, granularity: &'a str) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::CandleParams<'a>>{
         let endpoint = format!("/products/{}/candles", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            CandleQuery {
-                start: None,
-                end: None,
-                granularity: Some(granularity.to_string()),
-            },
+            crate::builder_v2::CandleParams::new(granularity),
             None,
         )
     }
@@ -331,13 +311,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_24hr_stats(&self, product_id: &str) -> QueryBuilder<EmptyQuery> {
+    pub fn get_24hr_stats<'a>(&self, product_id: &str) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::NoParams<'a>> {
         let endpoint = format!("/products/{}/stats", product_id);
         let url = self.url.join(&endpoint).unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            EmptyQuery,
+            crate::builder_v2::NoParams::new(),
             None,
         )
     }
@@ -354,12 +334,12 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_currencies(&self) -> QueryBuilder<EmptyQuery> {
+    pub fn get_currencies<'a>(&self) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::NoParams<'a>> {
         let url = self.url.join("/currencies").unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            EmptyQuery,
+            crate::builder_v2::NoParams::new(),
             None,
         )
     }
@@ -376,12 +356,12 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_time(&self) -> QueryBuilder<EmptyQuery> {
+    pub fn get_time<'a>(&self) -> crate::builder_v2::QueryBuilder<'a, crate::builder_v2::NoParams<'a>> {
         let url = self.url.join("/time").unwrap();
-        QueryBuilder::new(
+        crate::builder_v2::QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            EmptyQuery,
+            crate::builder_v2::NoParams::new(),
             None,
         )
     }

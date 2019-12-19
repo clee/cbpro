@@ -202,9 +202,6 @@ impl<'a> QueryBuilder<'a, PaginateQuery> {
         self
     }
 
-    pub fn paginate(self) -> Pages {
-        Paginate::new(self.client.clone(), self.sign_request(), self.query).pages()
-    }
 }
 
 impl<'a> QueryBuilder<'a, CandleQuery> {
