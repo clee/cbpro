@@ -3,7 +3,10 @@ use chrono::offset::Utc;
 use chrono::{offset::TimeZone, DateTime};
 use hmac::{Hmac, Mac};
 use reqwest::Error;
-use reqwest::{Client, Request, header::{HeaderValue, CONTENT_TYPE}};
+use reqwest::{
+    header::{HeaderValue, CONTENT_TYPE},
+    Client, Request,
+};
 use serde::Serialize;
 use serde_json::Value;
 use sha2::Sha256;
@@ -16,75 +19,386 @@ pub(super) struct Auth<'a> {
 }
 
 #[derive(Serialize)]
-pub struct EmptyQuery;
-
-#[derive(Serialize)]
-pub struct BookQuery {
-    pub level: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct CancelAllQuery {
-    pub product_id: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct ListOrderQuery {
-    pub product_id: Option<String>,
-    pub limit: Option<String>,
-    pub before: Option<String>,
-    pub after: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct CandleQuery {
-    pub start: Option<String>,
-    pub end: Option<String>,
-    pub granularity: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct PaginateQuery {
-    pub limit: Option<String>,
-    pub before: Option<String>,
-    pub after: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct LimitOrderQuery {
-    pub client_oid: Option<String>,
-
+pub struct CBParams<'a> {
+    level: Option<&'a str>,
+    start: Option<String>,
+    end: Option<String>,
+    granularity: Option<&'a str>,
+    client_oid: Option<&'a str>,
     #[serde(rename(serialize = "type"))]
-    pub order_type: Option<String>,
-
-    pub side: Option<String>,
-    pub product_id: Option<String>,
-    pub stp: Option<String>,
-    pub stop: Option<String>,
-    pub stop_price: Option<String>,
-
+    order_type: Option<&'a str>,
+    side: Option<&'a str>,
+    product_id: Option<&'a str>,
+    stp: Option<&'a str>,
+    stop: Option<&'a str>,
+    stop_price: Option<&'a str>,
     //limit
-    pub price: Option<String>,
-    pub size: Option<String>,
-    pub time_in_force: Option<String>,
-    pub cancel_after: Option<String>,
-    pub post_only: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct MarketOrderQuery {
-    pub client_oid: Option<String>,
-
-    #[serde(rename(serialize = "type"))]
-    pub order_type: Option<String>,
-
-    pub side: Option<String>,
-    pub product_id: Option<String>,
-
+    price: Option<&'a str>,
+    size: Option<&'a str>,
+    time_in_force: Option<&'a str>,
+    cancel_after: Option<&'a str>,
+    post_only: Option<&'a str>,
     //market
-    pub size: Option<String>,
-    pub funds: Option<String>,
+    funds: Option<&'a str>,
+    //paginate
+    limit: Option<&'a str>,
+    pub(super) before: Option<String>,
+    after: Option<String>,
 }
+
+impl<'a> CBParams<'a> {
+    pub(super) fn new() -> Self {
+        Self {
+            level: None,
+            start: None,
+            end: None,
+            granularity: None,
+            client_oid: None,
+            order_type: None,
+            side: None,
+            product_id: None,
+            stp: None,
+            stop: None,
+            stop_price: None,
+            price: None,
+            size: None,
+            time_in_force: None,
+            cancel_after: None,
+            post_only: None,
+            funds: None,
+            limit: None,
+            before: None,
+            after: None,
+        }
+    }
+}
+
+pub trait Params<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a>;
+    fn params(&self) -> &CBParams<'a>;
+}
+
+pub trait Product<'a> {
+    fn set_product_id(&mut self, value: &'a str);
+}
+
+pub trait Paginated<'a> {
+    fn set_limit(&mut self, value: &'a str);
+    fn set_before(&mut self, value: String);
+    fn set_after(&mut self, value: String);
+}
+
+pub trait Book<'a> {
+    fn set_level(&mut self, value: &'a str);
+}
+
+pub trait Candle<'a> {
+    fn set_start(&mut self, value: String);
+    fn set_end(&mut self, value: String);
+}
+
+pub trait Order<'a> {
+    fn set_client_oid(&mut self, value: &'a str);
+}
+
+pub trait Limit<'a> {
+    fn set_stp(&mut self, value: &'a str);
+    fn set_stop(&mut self, value: &'a str);
+    fn set_stop_price(&mut self, value: &'a str);
+    fn set_time_in_force(&mut self, value: &'a str);
+    fn set_cancel_after(&mut self, value: &'a str);
+    fn set_post_only(&mut self, value: &'a str);
+}
+
+pub trait Market<'a> {
+    fn set_funds(&mut self, value: &'a str);
+}
+//////////////////////////////////////////////////
+
+pub struct NoParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> NoParams<'a> {
+    pub fn new() -> Self {
+        Self {
+            params: CBParams::new()
+        }
+    }
+}
+
+impl<'a> Params<'a> for NoParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+pub struct ProductParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> ProductParams<'a> {
+    pub fn new() -> Self {
+        Self {
+            params: CBParams::new()
+        }
+    }
+}
+
+impl<'a> Params<'a> for ProductParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Product<'a> for ProductParams<'a> {
+    fn set_product_id(&mut self, value: &'a str) {
+        self.params_mut().product_id = Some(value);
+    }
+}
+
+pub struct ListOrderParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> ListOrderParams<'a> {
+    pub fn new() -> Self {
+        Self {
+            params: CBParams::new()
+        }
+    }
+}
+
+impl<'a> Params<'a> for ListOrderParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Product<'a> for ListOrderParams<'a> {
+    fn set_product_id(&mut self, value: &'a str) {
+        self.params_mut().product_id = Some(value);
+    }
+}
+
+impl<'a> Paginated<'a> for ListOrderParams<'a> {
+    fn set_limit(&mut self, value: &'a str) {
+        self.params_mut().limit = Some(value);
+    }
+    fn set_before(&mut self, value: String) {
+        self.params_mut().before = Some(value);
+        self.params_mut().after = None;
+    }
+    fn set_after(&mut self, value: String) {
+        self.params_mut().after = Some(value);
+        self.params_mut().before = None;
+    }
+}
+
+pub struct BookParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> BookParams<'a> {
+    pub fn new() -> Self {
+        Self {
+            params: CBParams::new()
+        }
+    }
+}
+
+impl<'a> Params<'a> for BookParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Book<'a> for BookParams<'a> {
+    fn set_level(&mut self, value: &'a str) {
+        self.params_mut().level = Some(value);
+    }
+}
+
+pub struct PaginateParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> PaginateParams<'a> {
+    pub fn new() -> Self {
+        Self {
+            params: CBParams::new()
+        }
+    }
+}
+
+impl<'a> Params<'a> for PaginateParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Paginated<'a> for PaginateParams<'a> {
+    fn set_limit(&mut self, value: &'a str) {
+        self.params_mut().limit = Some(value);
+    }
+    fn set_before(&mut self, value: String) {
+        self.params_mut().before = Some(value);
+        self.params_mut().after = None;
+    }
+    fn set_after(&mut self, value: String) {
+        self.params_mut().after = Some(value);
+        self.params_mut().before = None;
+    }
+}
+
+pub struct CandleParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> CandleParams<'a> {
+    pub fn new(granularity: &'a str) -> Self {
+        let mut params =  CBParams::new();
+        params.granularity = Some(granularity);
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for CandleParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Candle<'a> for CandleParams<'a> {
+    fn set_start(&mut self, value: String) {
+        self.params_mut().start = Some(value);
+    }
+    fn set_end(&mut self, value: String) {
+        self.params_mut().end = Some(value);
+    }
+}
+
+
+pub struct LimitOrderParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> LimitOrderParams<'a> {
+    pub fn new(product_id: &'a str, side: &'a str, price: &'a str, size: &'a str) -> Self {
+        let mut params =  CBParams::new();
+        params.order_type = Some("limit");
+        params.product_id = Some(product_id);
+        params.side = Some(side);
+        params.price = Some(price);
+        params.size = Some(size);
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for LimitOrderParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Order<'a> for LimitOrderParams<'a> {
+    fn set_client_oid(&mut self, value: &'a str) {
+        self.params_mut().client_oid = Some(value);
+    }
+}
+
+impl<'a> Limit<'a> for LimitOrderParams<'a> {
+    fn set_stp(&mut self, value: &'a str) {
+        self.params_mut().stp = Some(value);
+    }
+    fn set_stop(&mut self, value: &'a str) {
+        self.params_mut().stop = Some(value);
+    }
+    fn set_stop_price(&mut self, value: &'a str) {
+        self.params_mut().stop_price = Some(value);
+    }
+    fn set_time_in_force(&mut self, value: &'a str) {
+        self.params_mut().time_in_force = Some(value);
+    }
+    fn set_cancel_after(&mut self, value: &'a str) {
+        self.params_mut().cancel_after = Some(value);
+    }
+    fn set_post_only(&mut self, value: &'a str) {
+        self.params_mut().post_only = Some(value);
+    }
+}
+
+pub struct MarketOrderParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> MarketOrderParams<'a> {
+    pub fn new(product_id: &'a str, side: &'a str, size: &'a str) -> Self {
+        let mut params =  CBParams::new();
+        params.order_type = Some("market");
+        params.product_id = Some(product_id);
+        params.side = Some(side);
+        params.size = Some(size);
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for MarketOrderParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Order<'a> for MarketOrderParams<'a> {
+    fn set_client_oid(&mut self, value: &'a str) {
+        self.params_mut().client_oid = Some(value);
+    }
+}
+
+impl<'a> Market<'a> for MarketOrderParams<'a> {
+    fn set_funds(&mut self, value: &'a str) {
+        self.params_mut().funds = Some(value);
+    }
+}
+//////////////////
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -106,14 +420,14 @@ pub(super) fn apply_json<T: Serialize>(req: &mut Request, json: &T) {
     *req.body_mut() = Some(body.into());
 }
 
-pub struct QueryBuilder<'a, T: Serialize> {
+pub struct QueryBuilder<'a, T: Params<'a>> {
     client: Client,
     request: Request,
     query: T,
     auth: Option<Auth<'a>>,
 }
 
-impl<'a, T: Serialize> QueryBuilder<'a, T> {
+impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
     pub(super) fn new(
         client: Client,
         request: Request,
@@ -128,13 +442,13 @@ impl<'a, T: Serialize> QueryBuilder<'a, T> {
         }
     }
 
-    fn sign_request(&self) -> Request {
+    fn signed_request(&self) -> Request {
         let mut request = self.request.try_clone().unwrap();
 
         if let &reqwest::Method::POST = request.method() {
-            apply_json(&mut request, &self.query);
+            apply_json(&mut request, self.query.params());
         } else {
-            apply_query(&mut request, &self.query);
+            apply_query(&mut request, self.query.params());
         }
 
         if let Some(auth) = self.auth {
@@ -173,127 +487,103 @@ impl<'a, T: Serialize> QueryBuilder<'a, T> {
     }
 
     pub async fn json(self) -> Result<Value, Error> {
-        self.client.execute(self.sign_request()).await?.json().await
+        let request = self.signed_request();
+        println!("{:?}", &request.url().query());
+        self.client.execute(request).await?.json().await
     }
 }
 
-impl<'a> QueryBuilder<'a, BookQuery> {
-    pub fn level(mut self, value: u32) -> Self {
-        self.query.level = Some(value.to_string());
+impl<'a, T: Params<'a> + Product<'a>> QueryBuilder<'a, T> {
+    pub fn product_id(mut self, value: &'a str) -> Self {
+        self.query.set_product_id(value);
         self
     }
 }
 
-impl<'a> QueryBuilder<'a, PaginateQuery> {
-    pub fn limit(mut self, value: u32) -> Self {
-        self.query.limit = Some(value.to_string());
+impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<'a, T> {
+    pub fn level(mut self, value: &'a str) -> Self {
+        self.query.set_level(value);
         self
     }
-
-    pub fn before(mut self, value: &str) -> Self {
-        self.query.before = Some(value.to_string());
-        self.query.after = None;
-        self
-    }
-
-    pub fn after(mut self, value: &str) -> Self {
-        self.query.after = Some(value.to_string());
-        self.query.before = None;
-        self
-    }
-
 }
 
-impl<'a> QueryBuilder<'a, CandleQuery> {
-    pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self
+impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> QueryBuilder<'a, T> {
+    pub fn limit(mut self, value: &'a str) -> Self {
+        self.query.set_limit(value);
+        self
+    }
+
+    pub fn before(mut self, value: &'a str) -> Self {
+        self.query.set_before(value.to_string());
+        self
+    }
+
+    pub fn after(mut self, value: &'a str) -> Self {
+        self.query.set_after(value.to_string());
+        self
+    }
+
+    pub fn paginate(self) -> Pages<'a> {
+        Paginate::new(self.client.clone(), self.signed_request(), self.query).pages()
+    }
+}
+
+impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<'a, T> {
+    pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self 
     where
         Tz::Offset: core::fmt::Display,
     {
-        self.query.start = Some(start.to_rfc3339());
-        self.query.end = Some(end.to_rfc3339());
+        self.query.set_start(start.to_rfc3339());
+        self.query.set_end(end.to_rfc3339());
         self
     }
 }
 
-impl<'a> QueryBuilder<'a, LimitOrderQuery> {
+impl<'a, T: Params<'a> + Order<'a>> QueryBuilder<'a, T> {
     pub fn client_oid(mut self, value: &'a str) -> Self {
-        self.query.client_oid = Some(value.to_string());
+        self.query.set_client_oid(value);
+        self
+    }
+}
+
+impl<'a, T: Params<'a> + Market<'a>> QueryBuilder<'a, T> {
+    pub fn funds(mut self, value: &'a str) -> Self {
+        self.query.set_funds(value);
+        self
+    }
+}
+
+impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<'a, T> {
+    pub fn stp(mut self, value: &'a str) -> Self {
+        self.query.set_stp(value);
         self
     }
 
-    pub fn stp(mut self, value: &str) -> Self {
-        self.query.stp = Some(value.to_string());
-        self
-    }
-
-    pub fn stop_price(mut self, value: f64) -> Self {
-        self.query.stop_price = Some(value.to_string());
-        if let Some(ref value) = self.query.side {
+    pub fn stop_price(mut self, value: &'a str) -> Self {
+        self.query.set_stop_price(value);
+        if let Some(value) = self.query.params().side {
             if value == "buy" {
-                self.query.stop = Some("entry".to_string())
+                self.query.set_stop("entry");
             } else {
-                self.query.stop = Some("loss".to_string())
+                self.query.set_stop("loss");
             }
         }
         self
     }
 
-    pub fn time_in_force(mut self, value: &str) -> Self {
-        self.query.time_in_force = Some(value.to_string());
+    pub fn time_in_force(mut self, value: &'a str) -> Self {
+        self.query.set_time_in_force(value);
         self
     }
 
-    pub fn cancel_after(mut self, value: &str) -> Self {
-        self.query.cancel_after = Some(value.to_string());
-        self.query.time_in_force = Some("GTT".to_string());
+    pub fn cancel_after(mut self, value: &'a str) -> Self {
+        self.query.set_cancel_after(value);
+        self.query.set_time_in_force("GTT");
         self
     }
 
-    pub fn post_only(mut self, value: bool) -> Self {
-        self.query.post_only = Some(value.to_string());
-        self
-    }
-}
-
-impl<'a> QueryBuilder<'a, MarketOrderQuery> {
-    pub fn client_oid(mut self, value: &'a str) -> Self {
-        self.query.client_oid = Some(value.to_string());
-        self
-    }
-
-    pub fn funds(mut self, value: f64) -> Self {
-        self.query.funds = Some(value.to_string());
-        self
-    }
-}
-
-impl<'a> QueryBuilder<'a, CancelAllQuery> {
-    pub fn product_id(mut self, value: &'a str) -> Self {
-        self.query.product_id = Some(value.to_string());
-        self
-    }
-}
-
-impl<'a> QueryBuilder<'a, ListOrderQuery> {
-    pub fn limit(mut self, value: u32) -> Self {
-        self.query.limit = Some(value.to_string());
-        self
-    }
-
-    pub fn before(mut self, value: &str) -> Self {
-        self.query.before = Some(value.to_string());
-        self.query.after = None;
-        self
-    }
-
-    pub fn after(mut self, value: &str) -> Self {
-        self.query.after = Some(value.to_string());
-        self.query.before = None;
-        self
-    }
-
-    pub fn product_id(mut self, value: &str) -> Self {
-        self.query.product_id = Some(value.to_string());
+    pub fn post_only(mut self, value: &'a str) -> Self {
+        self.query.set_post_only(value);
         self
     }
 }

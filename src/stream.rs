@@ -5,7 +5,7 @@ use futures::{
     task::{Context, Poll},
 };
 use reqwest::{Error, Response, Client};
-use crate::builder_v2::{Paginated, apply_query, Params};
+use crate::builder::{Paginated, apply_query, Params};
 use reqwest::Request;
 use serde_json::Value;
 
