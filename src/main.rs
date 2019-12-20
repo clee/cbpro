@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let orders = client.public().get_product_order_book("BTC-USD").level("1").json().await?;
     //println!("{}", serde_json::to_string_pretty(&orders).unwrap());
 
-    let mut stream = client.public().get_trades("BTC-USD").paginate();
+    let mut stream = client.public().get_trades("BTC-USD").before(8050581).paginate();
     
     while let Some(json) = stream.try_next().await? {
         println!("{}", serde_json::to_string_pretty(&json).unwrap());

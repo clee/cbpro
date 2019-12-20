@@ -507,7 +507,7 @@ impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<'a, T> {
     }
 }
 
-impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> QueryBuilder<'a, T> {
+impl<'a, T: Params<'a> + Paginated<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> {
     pub fn limit(mut self, value: i32) -> Self {
         self.query.set_limit(value);
         self

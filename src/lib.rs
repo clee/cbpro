@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod stream;
 mod client;
 pub mod builder;
