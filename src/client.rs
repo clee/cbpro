@@ -87,7 +87,7 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn place_limit_order(&self, product_id: &'a str, side: &'a str, price: &'a str, size: &'a str) -> QueryBuilder<'a, LimitOrderParams<'a>> {
+    pub fn place_limit_order(&self, product_id: &'a str, side: &'a str, price: f64, size: f64) -> QueryBuilder<'a, LimitOrderParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
             self.client().clone(),
@@ -97,7 +97,7 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn place_market_order(&self, product_id: &'a str, side: &'a str, size: &'a str) -> QueryBuilder<'a, MarketOrderParams<'a>> {
+    pub fn place_market_order(&self, product_id: &'a str, side: &'a str, size: f64) -> QueryBuilder<'a, MarketOrderParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
             self.client().clone(),
@@ -227,14 +227,14 @@ impl PublicClient {
     ///
     /// ```no_run
     /// use cbpro::{PublicClient, SANDBOX_URL};
-    /// use futures::stream::StreamExt;
+    /// use futures::stream::TryStreamExt;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = PublicClient::new(SANDBOX_URL);
     /// let mut stream = client.get_trades("BTC-USD").paginate();
     ///
-    /// while let Some(Ok(json)) = stream.next().await {
+    /// while let Some(json) = stream.try_next().await? {
     ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
     ///     tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
     /// }
@@ -262,12 +262,12 @@ impl PublicClient {
     /// let end = chrono::offset::Utc::now();
     /// let start = end - chrono::Duration::hours(5);
     ///
-    /// let rates = client.get_historic_rates("BTC-USD", "3600").range(start, end).json().await?;
+    /// let rates = client.get_historic_rates("BTC-USD", 3600).range(start, end).json().await?;
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_historic_rates<'a>(&self, product_id: &str, granularity: &'a str) -> QueryBuilder<'a, CandleParams<'a>>{
+    pub fn get_historic_rates<'a>(&self, product_id: &str, granularity: i32) -> QueryBuilder<'a, CandleParams<'a>>{
         let endpoint = format!("/products/{}/candles", product_id);
         let url = self.url.join(&endpoint).unwrap();
         QueryBuilder::new(

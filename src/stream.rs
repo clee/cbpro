@@ -74,7 +74,7 @@ impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> Stream for Paginate<T> {
         };
 
         if let (Some(after), None) = (res.headers().get("cb-after"), &self.query.params().before) {
-            self.as_mut().query_mut().set_after(after.to_str().unwrap().to_string());
+            self.as_mut().query_mut().set_after(after.to_str().unwrap().parse().unwrap());
             let mut request = self.request.try_clone().unwrap();
             request.url_mut().set_query(None);
 
@@ -82,7 +82,7 @@ impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> Stream for Paginate<T> {
             *self.as_mut().in_flight() = self.client.execute(request).boxed()
 
         } else if let Some(before) = res.headers().get("cb-before") {
-            self.as_mut().query_mut().set_before(before.to_str().unwrap().to_string());
+            self.as_mut().query_mut().set_before(before.to_str().unwrap().parse().unwrap());
             let mut request = self.request.try_clone().unwrap();
             request.url_mut().set_query(None);
 

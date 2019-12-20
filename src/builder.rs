@@ -20,10 +20,10 @@ pub(super) struct Auth<'a> {
 
 #[derive(Serialize)]
 pub struct CBParams<'a> {
-    level: Option<&'a str>,
+    level: Option<i32>,
     start: Option<String>,
     end: Option<String>,
-    granularity: Option<&'a str>,
+    granularity: Option<i32>,
     client_oid: Option<&'a str>,
     #[serde(rename(serialize = "type"))]
     order_type: Option<&'a str>,
@@ -31,19 +31,19 @@ pub struct CBParams<'a> {
     product_id: Option<&'a str>,
     stp: Option<&'a str>,
     stop: Option<&'a str>,
-    stop_price: Option<&'a str>,
+    stop_price: Option<f64>,
     //limit
-    price: Option<&'a str>,
-    size: Option<&'a str>,
+    price: Option<f64>,
+    size: Option<f64>,
     time_in_force: Option<&'a str>,
     cancel_after: Option<&'a str>,
-    post_only: Option<&'a str>,
+    post_only: Option<bool>,
     //market
-    funds: Option<&'a str>,
+    funds: Option<f64>,
     //paginate
-    limit: Option<&'a str>,
-    pub(super) before: Option<String>,
-    after: Option<String>,
+    limit: Option<i32>,
+    pub(super) before: Option<i32>,
+    after: Option<i32>,
 }
 
 impl<'a> CBParams<'a> {
@@ -83,13 +83,13 @@ pub trait Product<'a> {
 }
 
 pub trait Paginated<'a> {
-    fn set_limit(&mut self, value: &'a str);
-    fn set_before(&mut self, value: String);
-    fn set_after(&mut self, value: String);
+    fn set_limit(&mut self, value: i32);
+    fn set_before(&mut self, value: i32);
+    fn set_after(&mut self, value: i32);
 }
 
 pub trait Book<'a> {
-    fn set_level(&mut self, value: &'a str);
+    fn set_level(&mut self, value: i32);
 }
 
 pub trait Candle<'a> {
@@ -104,14 +104,14 @@ pub trait Order<'a> {
 pub trait Limit<'a> {
     fn set_stp(&mut self, value: &'a str);
     fn set_stop(&mut self, value: &'a str);
-    fn set_stop_price(&mut self, value: &'a str);
+    fn set_stop_price(&mut self, value: f64);
     fn set_time_in_force(&mut self, value: &'a str);
     fn set_cancel_after(&mut self, value: &'a str);
-    fn set_post_only(&mut self, value: &'a str);
+    fn set_post_only(&mut self, value: bool);
 }
 
 pub trait Market<'a> {
-    fn set_funds(&mut self, value: &'a str);
+    fn set_funds(&mut self, value: f64);
 }
 //////////////////////////////////////////////////
 
@@ -194,14 +194,14 @@ impl<'a> Product<'a> for ListOrderParams<'a> {
 }
 
 impl<'a> Paginated<'a> for ListOrderParams<'a> {
-    fn set_limit(&mut self, value: &'a str) {
+    fn set_limit(&mut self, value: i32) {
         self.params_mut().limit = Some(value);
     }
-    fn set_before(&mut self, value: String) {
+    fn set_before(&mut self, value: i32) {
         self.params_mut().before = Some(value);
         self.params_mut().after = None;
     }
-    fn set_after(&mut self, value: String) {
+    fn set_after(&mut self, value: i32) {
         self.params_mut().after = Some(value);
         self.params_mut().before = None;
     }
@@ -230,7 +230,7 @@ impl<'a> Params<'a> for BookParams<'a> {
 }
 
 impl<'a> Book<'a> for BookParams<'a> {
-    fn set_level(&mut self, value: &'a str) {
+    fn set_level(&mut self, value: i32) {
         self.params_mut().level = Some(value);
     }
 }
@@ -258,14 +258,14 @@ impl<'a> Params<'a> for PaginateParams<'a> {
 }
 
 impl<'a> Paginated<'a> for PaginateParams<'a> {
-    fn set_limit(&mut self, value: &'a str) {
+    fn set_limit(&mut self, value: i32) {
         self.params_mut().limit = Some(value);
     }
-    fn set_before(&mut self, value: String) {
+    fn set_before(&mut self, value: i32) {
         self.params_mut().before = Some(value);
         self.params_mut().after = None;
     }
-    fn set_after(&mut self, value: String) {
+    fn set_after(&mut self, value: i32) {
         self.params_mut().after = Some(value);
         self.params_mut().before = None;
     }
@@ -276,7 +276,7 @@ pub struct CandleParams<'a> {
 }
 
 impl<'a> CandleParams<'a> {
-    pub fn new(granularity: &'a str) -> Self {
+    pub fn new(granularity: i32) -> Self {
         let mut params =  CBParams::new();
         params.granularity = Some(granularity);
         Self {
@@ -310,7 +310,7 @@ pub struct LimitOrderParams<'a> {
 }
 
 impl<'a> LimitOrderParams<'a> {
-    pub fn new(product_id: &'a str, side: &'a str, price: &'a str, size: &'a str) -> Self {
+    pub fn new(product_id: &'a str, side: &'a str, price: f64, size: f64) -> Self {
         let mut params =  CBParams::new();
         params.order_type = Some("limit");
         params.product_id = Some(product_id);
@@ -346,7 +346,7 @@ impl<'a> Limit<'a> for LimitOrderParams<'a> {
     fn set_stop(&mut self, value: &'a str) {
         self.params_mut().stop = Some(value);
     }
-    fn set_stop_price(&mut self, value: &'a str) {
+    fn set_stop_price(&mut self, value: f64) {
         self.params_mut().stop_price = Some(value);
     }
     fn set_time_in_force(&mut self, value: &'a str) {
@@ -355,7 +355,7 @@ impl<'a> Limit<'a> for LimitOrderParams<'a> {
     fn set_cancel_after(&mut self, value: &'a str) {
         self.params_mut().cancel_after = Some(value);
     }
-    fn set_post_only(&mut self, value: &'a str) {
+    fn set_post_only(&mut self, value: bool) {
         self.params_mut().post_only = Some(value);
     }
 }
@@ -365,7 +365,7 @@ pub struct MarketOrderParams<'a> {
 }
 
 impl<'a> MarketOrderParams<'a> {
-    pub fn new(product_id: &'a str, side: &'a str, size: &'a str) -> Self {
+    pub fn new(product_id: &'a str, side: &'a str, size: f64) -> Self {
         let mut params =  CBParams::new();
         params.order_type = Some("market");
         params.product_id = Some(product_id);
@@ -394,7 +394,7 @@ impl<'a> Order<'a> for MarketOrderParams<'a> {
 }
 
 impl<'a> Market<'a> for MarketOrderParams<'a> {
-    fn set_funds(&mut self, value: &'a str) {
+    fn set_funds(&mut self, value: f64) {
         self.params_mut().funds = Some(value);
     }
 }
@@ -501,25 +501,25 @@ impl<'a, T: Params<'a> + Product<'a>> QueryBuilder<'a, T> {
 }
 
 impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<'a, T> {
-    pub fn level(mut self, value: &'a str) -> Self {
+    pub fn level(mut self, value: i32) -> Self {
         self.query.set_level(value);
         self
     }
 }
 
 impl<'a, T: Params<'a> + Paginated<'a> + Send + 'a> QueryBuilder<'a, T> {
-    pub fn limit(mut self, value: &'a str) -> Self {
+    pub fn limit(mut self, value: i32) -> Self {
         self.query.set_limit(value);
         self
     }
 
-    pub fn before(mut self, value: &'a str) -> Self {
-        self.query.set_before(value.to_string());
+    pub fn before(mut self, value: i32) -> Self {
+        self.query.set_before(value);
         self
     }
 
-    pub fn after(mut self, value: &'a str) -> Self {
-        self.query.set_after(value.to_string());
+    pub fn after(mut self, value: i32) -> Self {
+        self.query.set_after(value);
         self
     }
 
@@ -547,7 +547,7 @@ impl<'a, T: Params<'a> + Order<'a>> QueryBuilder<'a, T> {
 }
 
 impl<'a, T: Params<'a> + Market<'a>> QueryBuilder<'a, T> {
-    pub fn funds(mut self, value: &'a str) -> Self {
+    pub fn funds(mut self, value: f64) -> Self {
         self.query.set_funds(value);
         self
     }
@@ -559,7 +559,7 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<'a, T> {
         self
     }
 
-    pub fn stop_price(mut self, value: &'a str) -> Self {
+    pub fn stop_price(mut self, value: f64) -> Self {
         self.query.set_stop_price(value);
         if let Some(value) = self.query.params().side {
             if value == "buy" {
@@ -582,7 +582,7 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<'a, T> {
         self
     }
 
-    pub fn post_only(mut self, value: &'a str) -> Self {
+    pub fn post_only(mut self, value: bool) -> Self {
         self.query.set_post_only(value);
         self
     }

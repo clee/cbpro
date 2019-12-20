@@ -1,5 +1,5 @@
 use cbpro::{AuthenticatedClient, SANDBOX_URL};
-//use futures::stream::StreamExt;
+use futures::stream::TryStreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,15 +19,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let orders = client.public().get_product_order_book("BTC-USD").level("1").json().await?;
     //println!("{}", serde_json::to_string_pretty(&orders).unwrap());
 
-/*     let mut stream = client.public().get_trades("BTC-USD").paginate();
+    let mut stream = client.public().get_trades("BTC-USD").paginate();
     
-    while let Some(Ok(json)) = stream.next().await {
+    while let Some(json) = stream.try_next().await? {
         println!("{}", serde_json::to_string_pretty(&json).unwrap());
         tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
-    } */
+    }
 
-    let data = client.list_accounts().json().await?;
-    println!("{}", serde_json::to_string_pretty(&data).unwrap());
+    //let data = client.list_accounts().json().await?;
+    //println!("{}", serde_json::to_string_pretty(&data).unwrap());
 
     Ok(())
 }
+
+/* use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
+
+fn main() {
+    let scaled = Decimal::new(2002, 2); // 2.02
+    println!("{}", scaled);
+    let lower = Decimal::new(199, 2);
+    let scaled = scaled / lower;
+    let f: f64 = scaled.round_dp(2).to_f64().unwrap();
+
+    println!("{}", lower);
+    println!("{}", scaled);
+    println!("{}", f);
+}
+ */
