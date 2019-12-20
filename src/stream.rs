@@ -63,7 +63,7 @@ impl<'a, T: Params<'a> + Paginated<'a> + Send + Unpin+ 'a> Stream for Paginate<T
             request.url_mut().set_query(None);
 
             apply_query(&mut request, self.query.params());
-            self.get_mut().in_flight = self.client.execute(request).boxed()
+            self.as_mut().in_flight = self.client.execute(request).boxed()
 
         } else if let Some(before) = res.headers().get("cb-before") {
             self.as_mut().query.set_before(before.to_str().unwrap().parse().unwrap());
