@@ -1,16 +1,5 @@
 use reqwest::{Client, Url};
-use crate::builder::{    
-    FillsParams,
-    QueryBuilder,
-    PaginateParams,
-    ProductParams,
-    NoParams,
-    ListOrderParams,
-    LimitOrderParams,
-    MarketOrderParams,
-    BookParams,
-    CandleParams
-};
+use crate::builder::*;
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
@@ -124,7 +113,7 @@ impl<'a> AuthenticatedClient<'a> {
         let endpoint = match order_id {
             ID::OrderID(id) => format!("/orders/{}", id),
             ID::ClientOID(id) => format!("/orders/client:{}", id),
-            _ => panic!("Can only cancel order by order_id or client_oid not product_id"),
+            _ => panic!("Can only cancel order by order_id or client_oid"),
         };
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
@@ -160,7 +149,7 @@ impl<'a> AuthenticatedClient<'a> {
         let endpoint = match order_id {
             ID::OrderID(id) => format!("/orders/{}", id),
             ID::ClientOID(id) => format!("/orders/client:{}", id),
-            _ => panic!("Can only get order by order_id or client_oid not product_id"),
+            _ => panic!("Can only get order by order_id or client_oid"),
         };
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(

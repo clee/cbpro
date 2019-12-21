@@ -399,7 +399,7 @@ impl<'a> FillsParams<'a> {
         match id {
             ID::OrderID(id) => params.order_id = Some(id),
             ID::ProductID(id) => params.product_id = Some(id),
-            _ => panic!("Can only get fills by order_id or product_id not client_oid"),
+            _ => panic!("Can only get fills by order_id or product_id"),
         }
 
         Self {
