@@ -1,6 +1,6 @@
 use reqwest::{Client, Url};
 use crate::builder::{    
-    Auth,
+    FillsParams,
     QueryBuilder,
     PaginateParams,
     ProductParams,
@@ -17,6 +17,19 @@ pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 pub enum ID<'a> {
     OrderID(&'a str),
     ClientOID(&'a str),
+    ProductID(&'a str),
+}
+                                                                                                                                                                                                                                                                                                                                                     
+pub enum QTY {
+    Size(f64),
+    Funds(f64),
+}
+
+#[derive(Copy, Clone)]
+pub(super) struct Auth<'a> {
+    pub key: &'a str,
+    pub pass: &'a str,
+    pub secret: &'a str,
 }
 
 pub struct AuthenticatedClient<'a> {
@@ -76,7 +89,7 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn get_account_holds(&self, account_id: &str) -> QueryBuilder<'a, PaginateParams<'a>> {
+    pub fn get_holds(&self, account_id: &str) -> QueryBuilder<'a, PaginateParams<'a>> {
         let endpoint = format!("/accounts/{}/holds", account_id);
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
@@ -97,20 +110,21 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn place_market_order(&self, product_id: &'a str, side: &'a str, size: f64) -> QueryBuilder<'a, MarketOrderParams<'a>> {
+    pub fn place_market_order(&self, product_id: &'a str, side: &'a str, qty: QTY) -> QueryBuilder<'a, MarketOrderParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            MarketOrderParams::new(product_id, side, size),
+            MarketOrderParams::new(product_id, side, qty),
             Some(self.auth),
         )
     }
 
-    pub fn cancel_order(&self, order_id: ID) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn cancel_order(&self, order_id: ID<'a>) -> QueryBuilder<'a, NoParams<'a>> {
         let endpoint = match order_id {
             ID::OrderID(id) => format!("/orders/{}", id),
             ID::ClientOID(id) => format!("/orders/client:{}", id),
+            _ => panic!("Can only cancel order by order_id or client_oid not product_id"),
         };
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
@@ -138,6 +152,31 @@ impl<'a> AuthenticatedClient<'a> {
             self.client().clone(),
             self.client().get(url).query(&status).build().unwrap(),
             ListOrderParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn get_order(&self, order_id: ID<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+        let endpoint = match order_id {
+            ID::OrderID(id) => format!("/orders/{}", id),
+            ID::ClientOID(id) => format!("/orders/client:{}", id),
+            _ => panic!("Can only get order by order_id or client_oid not product_id"),
+        };
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn get_fills(&self, id: ID<'a>) -> QueryBuilder<'a, FillsParams<'a>> {
+        let url = self.url().join("/fills").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            FillsParams::new(id),
             Some(self.auth),
         )
     }

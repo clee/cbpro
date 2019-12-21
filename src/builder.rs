@@ -1,4 +1,4 @@
-use crate::stream::{Pages, Paginate};
+use crate::{stream::{Pages, Paginate}, QTY, Auth, ID};
 use chrono::offset::Utc;
 use chrono::{offset::TimeZone, DateTime};
 use hmac::{Hmac, Mac};
@@ -11,13 +11,6 @@ use serde::Serialize;
 use serde_json::Value;
 use sha2::Sha256;
 
-#[derive(Copy, Clone)]
-pub(super) struct Auth<'a> {
-    pub key: &'a str,
-    pub pass: &'a str,
-    pub secret: &'a str,
-}
-
 #[derive(Serialize)]
 pub struct CBParams<'a> {
     level: Option<i32>,
@@ -25,14 +18,15 @@ pub struct CBParams<'a> {
     end: Option<String>,
     granularity: Option<i32>,
     client_oid: Option<&'a str>,
+    order_id: Option<&'a str>,
     #[serde(rename(serialize = "type"))]
     order_type: Option<&'a str>,
+    //limit
     side: Option<&'a str>,
     product_id: Option<&'a str>,
     stp: Option<&'a str>,
     stop: Option<&'a str>,
     stop_price: Option<f64>,
-    //limit
     price: Option<f64>,
     size: Option<f64>,
     time_in_force: Option<&'a str>,
@@ -54,6 +48,7 @@ impl<'a> CBParams<'a> {
             end: None,
             granularity: None,
             client_oid: None,
+            order_id: None,
             order_type: None,
             side: None,
             product_id: None,
@@ -78,7 +73,7 @@ pub trait Params<'a> {
     fn params(&self) -> &CBParams<'a>;
 }
 
-pub trait Product<'a> {
+pub trait ProductID<'a> {
     fn set_product_id(&mut self, value: &'a str);
 }
 
@@ -97,7 +92,7 @@ pub trait Candle<'a> {
     fn set_end(&mut self, value: String);
 }
 
-pub trait Order<'a> {
+pub trait ClientOID<'a> {
     fn set_client_oid(&mut self, value: &'a str);
 }
 
@@ -110,9 +105,6 @@ pub trait Limit<'a> {
     fn set_post_only(&mut self, value: bool);
 }
 
-pub trait Market<'a> {
-    fn set_funds(&mut self, value: f64);
-}
 //////////////////////////////////////////////////
 
 pub struct NoParams<'a> {
@@ -159,7 +151,7 @@ impl<'a> Params<'a> for ProductParams<'a> {
     }
 }
 
-impl<'a> Product<'a> for ProductParams<'a> {
+impl<'a> ProductID<'a> for ProductParams<'a> {
     fn set_product_id(&mut self, value: &'a str) {
         self.params_mut().product_id = Some(value);
     }
@@ -187,7 +179,7 @@ impl<'a> Params<'a> for ListOrderParams<'a> {
     }
 }
 
-impl<'a> Product<'a> for ListOrderParams<'a> {
+impl<'a> ProductID<'a> for ListOrderParams<'a> {
     fn set_product_id(&mut self, value: &'a str) {
         self.params_mut().product_id = Some(value);
     }
@@ -333,7 +325,7 @@ impl<'a> Params<'a> for LimitOrderParams<'a> {
     }
 }
 
-impl<'a> Order<'a> for LimitOrderParams<'a> {
+impl<'a> ClientOID<'a> for LimitOrderParams<'a> {
     fn set_client_oid(&mut self, value: &'a str) {
         self.params_mut().client_oid = Some(value);
     }
@@ -365,12 +357,15 @@ pub struct MarketOrderParams<'a> {
 }
 
 impl<'a> MarketOrderParams<'a> {
-    pub fn new(product_id: &'a str, side: &'a str, size: f64) -> Self {
+    pub fn new(product_id: &'a str, side: &'a str, qty: QTY) -> Self {
         let mut params =  CBParams::new();
         params.order_type = Some("market");
         params.product_id = Some(product_id);
         params.side = Some(side);
-        params.size = Some(size);
+        match qty {
+            QTY::Size(value) => params.size = Some(value),
+            QTY::Funds(value) => params.funds = Some(value),
+        };
         Self {
             params: params
         }
@@ -387,15 +382,39 @@ impl<'a> Params<'a> for MarketOrderParams<'a> {
     }
 }
 
-impl<'a> Order<'a> for MarketOrderParams<'a> {
+impl<'a> ClientOID<'a> for MarketOrderParams<'a> {
     fn set_client_oid(&mut self, value: &'a str) {
         self.params_mut().client_oid = Some(value);
     }
 }
 
-impl<'a> Market<'a> for MarketOrderParams<'a> {
-    fn set_funds(&mut self, value: f64) {
-        self.params_mut().funds = Some(value);
+pub struct FillsParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> FillsParams<'a> {
+    pub fn new(id: ID<'a>) -> Self {
+        let mut params =  CBParams::new();
+
+        match id {
+            ID::OrderID(id) => params.order_id = Some(id),
+            ID::ProductID(id) => params.product_id = Some(id),
+            _ => panic!("Can only get fills by order_id or product_id not client_oid"),
+        }
+
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for FillsParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
     }
 }
 //////////////////
@@ -493,7 +512,7 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
     }
 }
 
-impl<'a, T: Params<'a> + Product<'a>> QueryBuilder<'a, T> {
+impl<'a, T: Params<'a> + ProductID<'a>> QueryBuilder<'a, T> {
     pub fn product_id(mut self, value: &'a str) -> Self {
         self.query.set_product_id(value);
         self
@@ -539,16 +558,9 @@ impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<'a, T> {
     }
 }
 
-impl<'a, T: Params<'a> + Order<'a>> QueryBuilder<'a, T> {
+impl<'a, T: Params<'a> + ClientOID<'a>> QueryBuilder<'a, T> {
     pub fn client_oid(mut self, value: &'a str) -> Self {
         self.query.set_client_oid(value);
-        self
-    }
-}
-
-impl<'a, T: Params<'a> + Market<'a>> QueryBuilder<'a, T> {
-    pub fn funds(mut self, value: f64) -> Self {
-        self.query.set_funds(value);
         self
     }
 }

@@ -1,5 +1,5 @@
-use cbpro::{AuthenticatedClient, SANDBOX_URL};
-use futures::stream::TryStreamExt;
+use cbpro::{AuthenticatedClient, SANDBOX_URL, ID};
+//use futures::stream::TryStreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,15 +19,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let orders = client.public().get_product_order_book("BTC-USD").level("1").json().await?;
     //println!("{}", serde_json::to_string_pretty(&orders).unwrap());
 
-    let mut stream = client.public().get_trades("BTC-USD").paginate();
+/*     let mut stream = client.public().get_trades("BTC-USD").paginate();
     
     while let Some(json) = stream.try_next().await? {
         println!("{}", serde_json::to_string_pretty(&json).unwrap());
         tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
-    }
+    } */
 
-    //let data = client.list_accounts().json().await?;
-    //println!("{}", serde_json::to_string_pretty(&data).unwrap());
+    let data = client.get_fills(ID::ProductID("BTC-USD")).json().await?;
+    println!("{}", serde_json::to_string_pretty(&data).unwrap());
 
     Ok(())
 }
