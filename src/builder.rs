@@ -1,4 +1,4 @@
-use crate::{stream::{Pages, Paginate}, Auth, QTY, FILL, DEP, WDL};
+use crate::{stream::{Pages, Paginate}, Auth, QTY, FILL, DEP, WDL, RPT};
 use chrono::offset::Utc;
 use chrono::{offset::TimeZone, DateTime};
 use hmac::{Hmac, Mac};
@@ -20,7 +20,7 @@ pub struct CBParams<'a> {
     client_oid: Option<&'a str>,
     order_id: Option<&'a str>,
     #[serde(rename(serialize = "type"))]
-    order_type: Option<&'a str>,
+    type_: Option<&'a str>,
     //limit
     side: Option<&'a str>,
     product_id: Option<&'a str>,
@@ -46,8 +46,15 @@ pub struct CBParams<'a> {
     crypto_address: Option<&'a str>,
     destination_tag: Option<&'a str>,
     no_destination_tag: Option<bool>,
+    //conversion
     from: Option<&'a str>,
     to: Option<&'a str>,
+    //report
+    start_date: Option<String>,
+    end_date: Option<String>,
+    format: Option<&'a str>,
+    email: Option<&'a str>,
+    account_id: Option<&'a str>,
 }
 
 impl<'a> CBParams<'a> {
@@ -59,7 +66,7 @@ impl<'a> CBParams<'a> {
             granularity: None,
             client_oid: None,
             order_id: None,
-            order_type: None,
+            type_: None,
             side: None,
             product_id: None,
             stp: None,
@@ -83,6 +90,11 @@ impl<'a> CBParams<'a> {
             no_destination_tag: None,
             from: None,
             to: None,
+            start_date: None,
+            end_date: None,
+            format: None,
+            email: None,
+            account_id: None,
         }
     }
 }
@@ -122,6 +134,11 @@ pub trait Limit<'a> {
     fn set_time_in_force(&mut self, value: &'a str);
     fn set_cancel_after(&mut self, value: &'a str);
     fn set_post_only(&mut self, value: bool);
+}
+
+pub trait Report<'a> {
+    fn set_format(&mut self, value: &'a str);
+    fn set_email(&mut self, value: &'a str);
 }
 //////////////////////////////////////////////////
 
@@ -322,7 +339,7 @@ pub struct LimitOrderParams<'a> {
 impl<'a> LimitOrderParams<'a> {
     pub fn new(product_id: &'a str, side: &'a str, price: f64, size: f64) -> Self {
         let mut params =  CBParams::new();
-        params.order_type = Some("limit");
+        params.type_ = Some("limit");
         params.product_id = Some(product_id);
         params.side = Some(side);
         params.price = Some(price);
@@ -377,7 +394,7 @@ pub struct MarketOrderParams<'a> {
 impl<'a> MarketOrderParams<'a> {
     pub fn new(product_id: &'a str, side: &'a str, qty: QTY) -> Self {
         let mut params =  CBParams::new();
-        params.order_type = Some("market");
+        params.type_ = Some("market");
         params.product_id = Some(product_id);
         params.side = Some(side);
         match qty {
@@ -524,6 +541,80 @@ impl<'a> ConversionParams<'a> {
 }
 
 impl<'a> Params<'a> for ConversionParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+pub struct ReportParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> ReportParams<'a> {
+    pub fn new(start_date: String, end_date: String, rpt: RPT<'a>) -> Self {
+        let mut params =  CBParams::new();
+        params.start_date = Some(start_date);
+        params.end_date = Some(end_date);
+
+        match rpt {
+            RPT::Fills { product_id } => {
+                params.product_id = Some(product_id);
+                params.type_ = Some("fills");
+            },
+            RPT::Account { account_id } => {
+                params.account_id = Some(account_id);
+                params.type_ = Some("account");
+            },
+        }
+
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for ReportParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+impl<'a> Report<'a> for ReportParams<'a> {
+    fn set_format(&mut self, value: &'a str) {
+        self.params_mut().format = Some(value);
+    }
+    fn set_email(&mut self, value: &'a str) {
+        self.params_mut().email = Some(value);
+    }
+}
+
+pub struct ProfileParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> ProfileParams<'a> {
+    pub fn new(from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> Self {
+        let mut params =  CBParams::new();
+        params.from = Some(from);
+        params.to = Some(to);
+        params.currency = Some(currency);
+        params.amount = Some(amount);
+
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for ProfileParams<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -711,6 +802,18 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<'a, T> {
 
     pub fn post_only(mut self, value: bool) -> Self {
         self.query.set_post_only(value);
+        self
+    }
+}
+
+impl<'a, T: Params<'a> + Report<'a>> QueryBuilder<'a, T> {
+    pub fn format(mut self, value: &'a str) -> Self {
+        self.query.set_format(value);
+        self
+    }
+
+    pub fn email(mut self, value: &'a str) -> Self {
+        self.query.set_email(value);
         self
     }
 }

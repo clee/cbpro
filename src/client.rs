@@ -1,32 +1,38 @@
 use reqwest::{ Client, Url };
+use chrono::{offset::TimeZone, DateTime};
 use crate::builder::*;
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
 pub enum ORD<'a> {
     OrderID(&'a str),
-    ClientOID(&'a str),
+    ClientOID(&'a str)
 }
 
 pub enum FILL<'a> {
     OrderID(&'a str),
-    ProductID(&'a str),
+    ProductID(&'a str)
 }
 
 pub enum DEP<'a> {
     CBAccountID(&'a str),
-    PYMTMethodID(&'a str),
+    PYMTMethodID(&'a str)
 }
 
 pub enum WDL<'a> {
     CBAccountID(&'a str),
     PYMTMethodID(&'a str),
-    Crypto { addr: &'a str, tag: Option<&'a str> },
+    Crypto { addr: &'a str, tag: Option<&'a str> }
+}
+
+pub enum RPT<'a> {
+    Fills { product_id: &'a str },
+    Account { account_id: &'a str }
 }
                                                                                                                                                                                                                                                                                     
 pub enum QTY {
     Size(f64),
-    Funds(f64),
+    Funds(f64)
 }
 
 #[derive(Copy, Clone)]
@@ -244,6 +250,71 @@ impl<'a> AuthenticatedClient<'a> {
 
     pub fn get_current_fees(&self) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/fees").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn create_report<Tz: TimeZone>(&self, start_date: DateTime<Tz>, end_date: DateTime<Tz>, rpt: RPT<'a>) -> QueryBuilder<'a, ReportParams<'a>> 
+        where
+            Tz::Offset: core::fmt::Display,
+    {
+        let url = self.url().join("/reports").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().post(url).build().unwrap(),
+            ReportParams::new(start_date.to_rfc3339(), end_date.to_rfc3339(), rpt),
+            Some(self.auth),
+        )
+    }
+
+    pub fn get_report_status(&self, report_id: &'a str) -> QueryBuilder<'a, NoParams<'a>> {
+        let endpoint = format!("/reports/:{}", report_id);
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn list_profiles(&self) -> QueryBuilder<'a, NoParams<'a>> {
+        let url = self.url().join("/profiles").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn get_profile(&self, profile_id: &'a str) -> QueryBuilder<'a, NoParams<'a>> {
+        let endpoint = format!("/profiles/{}", profile_id);
+        let url = self.url().join(&endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn transfer_profile(&self, from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> QueryBuilder<'a, ProfileParams<'a>> {
+        let url = self.url().join("/profiles/transfer").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().post(url).build().unwrap(),
+            ProfileParams::new(from, to, currency, amount),
+            Some(self.auth),
+        )
+    }
+
+    pub fn get_trailing_volume(&self) -> QueryBuilder<'a, NoParams<'a>> {
+        let url = self.url().join("/users/self/trailing-volume").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
