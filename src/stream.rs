@@ -4,9 +4,8 @@ use futures::{
     stream::{BoxStream, Stream, StreamExt},
     task::{Context, Poll},
 };
-use reqwest::{Error, Response, Client};
+use reqwest::{Error, Response, Client, Request};
 use crate::builder::{Paginate, apply_query, Params};
-use reqwest::Request;
 use serde_json::Value;
 
 enum State {

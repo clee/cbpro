@@ -1,11 +1,9 @@
 use crate::{stream::{Pages, Paginated}, Auth, QTY, RPT};
-use chrono::offset::Utc;
-use chrono::{offset::TimeZone, DateTime};
+use chrono::{offset::{TimeZone, Utc}, DateTime};
 use hmac::{Hmac, Mac};
-use reqwest::Error;
 use reqwest::{
     header::{HeaderValue, CONTENT_TYPE},
-    Client, Request,
+    Client, Request, Error
 };
 use serde::Serialize;
 use serde_json::Value;
@@ -147,7 +145,7 @@ pub struct NoParams<'a> {
 }
 
 impl<'a> NoParams<'a> {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
         }
@@ -164,19 +162,19 @@ impl<'a> Params<'a> for NoParams<'a> {
     }
 }
 
-pub struct ProductParams<'a> {
+pub struct CancelParams<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> ProductParams<'a> {
-    pub fn new() -> Self {
+impl<'a> CancelParams<'a> {
+    pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
         }
     }
 }
 
-impl<'a> Params<'a> for ProductParams<'a> {
+impl<'a> Params<'a> for CancelParams<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -186,7 +184,7 @@ impl<'a> Params<'a> for ProductParams<'a> {
     }
 }
 
-impl<'a> ProductID<'a> for ProductParams<'a> {
+impl<'a> ProductID<'a> for CancelParams<'a> {
     fn set_product_id(&mut self, value: &'a str) {
         self.params_mut().product_id = Some(value);
     }
@@ -197,7 +195,7 @@ pub struct ListOrderParams<'a> {
 }
 
 impl<'a> ListOrderParams<'a> {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
         }
@@ -239,7 +237,7 @@ pub struct BookParams<'a> {
 }
 
 impl<'a> BookParams<'a> {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
         }
@@ -267,7 +265,7 @@ pub struct PaginateParams<'a> {
 }
 
 impl<'a> PaginateParams<'a> {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
         }
@@ -303,7 +301,7 @@ pub struct CandleParams<'a> {
 }
 
 impl<'a> CandleParams<'a> {
-    pub fn new(granularity: i32) -> Self {
+    pub(super) fn new(granularity: i32) -> Self {
         let mut params =  CBParams::new();
         params.granularity = Some(granularity);
         Self {
@@ -337,7 +335,7 @@ pub struct LimitOrderParams<'a> {
 }
 
 impl<'a> LimitOrderParams<'a> {
-    pub fn new(product_id: &'a str, side: &'a str, price: f64, size: f64) -> Self {
+    pub(super) fn new(product_id: &'a str, side: &'a str, price: f64, size: f64) -> Self {
         let mut params =  CBParams::new();
         params.type_ = Some("limit");
         params.product_id = Some(product_id);
@@ -392,7 +390,7 @@ pub struct MarketOrderParams<'a> {
 }
 
 impl<'a> MarketOrderParams<'a> {
-    pub fn new(product_id: &'a str, side: &'a str, qty: QTY) -> Self {
+    pub(super) fn new(product_id: &'a str, side: &'a str, qty: QTY) -> Self {
         let mut params =  CBParams::new();
         params.type_ = Some("market");
         params.product_id = Some(product_id);
@@ -428,7 +426,7 @@ pub struct ReportParams<'a> {
 }
 
 impl<'a> ReportParams<'a> {
-    pub fn new(start_date: String, end_date: String, rpt: RPT<'a>) -> Self {
+    pub(super) fn new(start_date: String, end_date: String, rpt: RPT<'a>) -> Self {
         let mut params =  CBParams::new();
         params.start_date = Some(start_date);
         params.end_date = Some(end_date);

@@ -144,12 +144,12 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn cancel_all(&self) -> QueryBuilder<'a, ProductParams<'a>> {
+    pub fn cancel_all(&self) -> QueryBuilder<'a, CancelParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().delete(url).build().unwrap(),
-            ProductParams::new(),
+            CancelParams::new(),
             Some(self.auth),
         )
     }
