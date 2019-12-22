@@ -1,4 +1,4 @@
-use cbpro::{AuthenticatedClient, SANDBOX_URL, ID};
+use cbpro::{AuthenticatedClient, SANDBOX_URL, FILL};
 //use futures::stream::TryStreamExt;
 
 #[tokio::main]
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
     } */
 
-    let data = client.get_fills(ID::ProductID("BTC-USD")).json().await?;
+    let data = client.get_fills(FILL::OrderID("911fbc96-69d7-4e15-83fa-d98d77a80831")).json().await?;
     println!("{}", serde_json::to_string_pretty(&data).unwrap());
 
     Ok(())

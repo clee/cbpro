@@ -1,4 +1,4 @@
-use crate::{stream::{Pages, Paginate}, QTY, Auth, ID};
+use crate::{stream::{Pages, Paginate}, QTY, Auth, FILL, DEP, WDL};
 use chrono::offset::Utc;
 use chrono::{offset::TimeZone, DateTime};
 use hmac::{Hmac, Mac};
@@ -38,6 +38,14 @@ pub struct CBParams<'a> {
     limit: Option<i32>,
     pub(super) before: Option<i32>,
     after: Option<i32>,
+    //deposits/withdrawals
+    amount: Option<f64>,
+    currency: Option<&'a str>,
+    payment_method_id: Option<&'a str>,
+    coinbase_account_id: Option<&'a str>,
+    crypto_address: Option<&'a str>,
+    destination_tag: Option<&'a str>,
+    no_destination_tag: Option<bool>,
 }
 
 impl<'a> CBParams<'a> {
@@ -64,6 +72,13 @@ impl<'a> CBParams<'a> {
             limit: None,
             before: None,
             after: None,
+            amount: None,
+            currency: None,
+            payment_method_id: None,
+            coinbase_account_id: None,
+            crypto_address: None,
+            destination_tag: None,
+            no_destination_tag: None,
         }
     }
 }
@@ -104,7 +119,6 @@ pub trait Limit<'a> {
     fn set_cancel_after(&mut self, value: &'a str);
     fn set_post_only(&mut self, value: bool);
 }
-
 //////////////////////////////////////////////////
 
 pub struct NoParams<'a> {
@@ -393,13 +407,12 @@ pub struct FillsParams<'a> {
 }
 
 impl<'a> FillsParams<'a> {
-    pub fn new(id: ID<'a>) -> Self {
+    pub fn new(id: FILL<'a>) -> Self {
         let mut params =  CBParams::new();
 
         match id {
-            ID::OrderID(id) => params.order_id = Some(id),
-            ID::ProductID(id) => params.product_id = Some(id),
-            _ => panic!("Can only get fills by order_id or product_id"),
+            FILL::OrderID(id) => params.order_id = Some(id),
+            FILL::ProductID(id) => params.product_id = Some(id)
         }
 
         Self {
@@ -409,6 +422,77 @@ impl<'a> FillsParams<'a> {
 }
 
 impl<'a> Params<'a> for FillsParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+pub struct DepositsParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> DepositsParams<'a> {
+    pub fn new(amount: f64, currency: &'a str, dep: DEP<'a>) -> Self {
+        let mut params =  CBParams::new();
+        params.amount = Some(amount);
+        params.currency = Some(currency);
+
+        match dep {
+            DEP::CBAccountID(id) => params.coinbase_account_id = Some(id),
+            DEP::PYMTMethodID(id) => params.payment_method_id = Some(id)
+        }
+
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for DepositsParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+pub struct WithdrawalsParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> WithdrawalsParams<'a> {
+    pub fn new(amount: f64, currency: &'a str, wdl: WDL<'a>) -> Self {
+        let mut params =  CBParams::new();
+        params.amount = Some(amount);
+        params.currency = Some(currency);
+
+        match wdl {
+            WDL::CBAccountID(id) => params.coinbase_account_id = Some(id),
+            WDL::PYMTMethodID(id) => params.payment_method_id = Some(id),
+            WDL::Crypto { addr, tag } => {
+                params.crypto_address = Some(addr);
+
+                if let Some(t) = tag {
+                    params.destination_tag = Some(t);
+                } else {
+                    params.no_destination_tag = Some(true);
+                }
+            }
+        }
+
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for WithdrawalsParams<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }

@@ -3,12 +3,27 @@ use crate::builder::*;
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
 
-pub enum ID<'a> {
+pub enum ORD<'a> {
     OrderID(&'a str),
     ClientOID(&'a str),
+}
+
+pub enum FILL<'a> {
+    OrderID(&'a str),
     ProductID(&'a str),
 }
-                                                                                                                                                                                                                                                                                                                                                     
+
+pub enum DEP<'a> {
+    CBAccountID(&'a str),
+    PYMTMethodID(&'a str),
+}
+
+pub enum WDL<'a> {
+    CBAccountID(&'a str),
+    PYMTMethodID(&'a str),
+    Crypto { addr: &'a str, tag: Option<&'a str> },
+}
+                                                                                                                                                                                                                                                                                    
 pub enum QTY {
     Size(f64),
     Funds(f64),
@@ -109,11 +124,10 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn cancel_order(&self, order_id: ID<'a>) -> QueryBuilder<'a, NoParams<'a>> {
-        let endpoint = match order_id {
-            ID::OrderID(id) => format!("/orders/{}", id),
-            ID::ClientOID(id) => format!("/orders/client:{}", id),
-            _ => panic!("Can only cancel order by order_id or client_oid"),
+    pub fn cancel_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+        let endpoint = match ord {
+            ORD::OrderID(id) => format!("/orders/{}", id),
+            ORD::ClientOID(id) => format!("/orders/client:{}", id)
         };
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
@@ -145,11 +159,10 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn get_order(&self, order_id: ID<'a>) -> QueryBuilder<'a, NoParams<'a>> {
-        let endpoint = match order_id {
-            ID::OrderID(id) => format!("/orders/{}", id),
-            ID::ClientOID(id) => format!("/orders/client:{}", id),
-            _ => panic!("Can only get order by order_id or client_oid"),
+    pub fn get_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+        let endpoint = match ord {
+            ORD::OrderID(id) => format!("/orders/{}", id),
+            ORD::ClientOID(id) => format!("/orders/client:{}", id)
         };
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
@@ -160,12 +173,41 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn get_fills(&self, id: ID<'a>) -> QueryBuilder<'a, FillsParams<'a>> {
+    pub fn get_fills(&self, fill: FILL<'a>) -> QueryBuilder<'a, FillsParams<'a>> {
         let url = self.url().join("/fills").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            FillsParams::new(id),
+            FillsParams::new(fill),
+            Some(self.auth),
+        )
+    }
+
+    pub fn deposit(&self, amount: f64, currency: &'a str, dep: DEP<'a>) -> QueryBuilder<'a, DepositsParams<'a>> {
+        let endpoint = match dep {
+            DEP::CBAccountID(_) => "/deposits/coinbase-account",
+            DEP::PYMTMethodID(_) => "/deposits/payment-method"
+        };
+        let url = self.url().join(endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().post(url).build().unwrap(),
+            DepositsParams::new(amount, currency, dep),
+            Some(self.auth),
+        )
+    }
+
+    pub fn withdrawals(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, WithdrawalsParams<'a>> {
+        let endpoint = match wdl {
+            WDL::CBAccountID(_) => "/withdrawals/coinbase-account",
+            WDL::PYMTMethodID(_) => "/withdrawals/payment-method",
+            WDL::Crypto { addr: _, tag: _ } => "/withdrawals/crypto",
+        };
+        let url = self.url().join(endpoint).unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().post(url).build().unwrap(),
+            WithdrawalsParams::new(amount, currency, wdl),
             Some(self.auth),
         )
     }
