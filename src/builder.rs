@@ -1,4 +1,4 @@
-use crate::{stream::{Pages, Paginate}, QTY, Auth, FILL, DEP, WDL};
+use crate::{stream::{Pages, Paginate}, Auth, QTY, FILL, DEP, WDL};
 use chrono::offset::Utc;
 use chrono::{offset::TimeZone, DateTime};
 use hmac::{Hmac, Mac};
@@ -46,6 +46,8 @@ pub struct CBParams<'a> {
     crypto_address: Option<&'a str>,
     destination_tag: Option<&'a str>,
     no_destination_tag: Option<bool>,
+    from: Option<&'a str>,
+    to: Option<&'a str>,
 }
 
 impl<'a> CBParams<'a> {
@@ -79,6 +81,8 @@ impl<'a> CBParams<'a> {
             crypto_address: None,
             destination_tag: None,
             no_destination_tag: None,
+            from: None,
+            to: None,
         }
     }
 }
@@ -493,6 +497,33 @@ impl<'a> WithdrawalsParams<'a> {
 }
 
 impl<'a> Params<'a> for WithdrawalsParams<'a> {
+    fn params_mut(&mut self) -> &mut CBParams<'a> {
+        &mut self.params
+    }
+
+    fn params(&self) -> &CBParams<'a> {
+        &self.params
+    }
+}
+
+pub struct ConversionParams<'a> {
+    params: CBParams<'a>,
+}
+
+impl<'a> ConversionParams<'a> {
+    pub fn new(from: &'a str, to: &'a str, amount: f64) -> Self {
+        let mut params =  CBParams::new();
+        params.from = Some(from);
+        params.to = Some(to);
+        params.amount = Some(amount);
+
+        Self {
+            params: params
+        }
+    }
+}
+
+impl<'a> Params<'a> for ConversionParams<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }

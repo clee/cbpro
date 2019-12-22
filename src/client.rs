@@ -1,4 +1,4 @@
-use reqwest::{Client, Url};
+use reqwest::{ Client, Url };
 use crate::builder::*;
 
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
@@ -197,7 +197,7 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn withdrawals(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, WithdrawalsParams<'a>> {
+    pub fn withdraw(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, WithdrawalsParams<'a>> {
         let endpoint = match wdl {
             WDL::CBAccountID(_) => "/withdrawals/coinbase-account",
             WDL::PYMTMethodID(_) => "/withdrawals/payment-method",
@@ -208,6 +208,46 @@ impl<'a> AuthenticatedClient<'a> {
             self.client().clone(),
             self.client().post(url).build().unwrap(),
             WithdrawalsParams::new(amount, currency, wdl),
+            Some(self.auth),
+        )
+    }
+
+    pub fn convert(&self, from: &'a str, to: &'a str, amount: f64) -> QueryBuilder<'a, ConversionParams<'a>> {
+        let url = self.url().join("/conversions").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().post(url).build().unwrap(),
+            ConversionParams::new(from, to, amount),
+            Some(self.auth),
+        )
+    }
+
+    pub fn list_payment_methods(&self) -> QueryBuilder<'a, NoParams<'a>> {
+        let url = self.url().join("/payment-methods").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn list_coinbase_accounts(&self) -> QueryBuilder<'a, NoParams<'a>> {
+        let url = self.url().join("/coinbase-accounts").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
+            Some(self.auth),
+        )
+    }
+
+    pub fn get_current_fees(&self) -> QueryBuilder<'a, NoParams<'a>> {
+        let url = self.url().join("/fees").unwrap();
+        QueryBuilder::new(
+            self.client().clone(),
+            self.client().get(url).build().unwrap(),
+            NoParams::new(),
             Some(self.auth),
         )
     }
