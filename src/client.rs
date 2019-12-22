@@ -179,51 +179,95 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn get_fills(&self, fill: FILL<'a>) -> QueryBuilder<'a, FillsParams<'a>> {
+    pub fn get_fills(&self, fill: FILL<'a>) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/fills").unwrap();
+
+        let mut required_params = NoParams::new();
+        match fill {
+            FILL::OrderID(id) => required_params.params_mut().order_id = Some(id),
+            FILL::ProductID(id) => required_params.params_mut().product_id = Some(id)
+        }
+
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            FillsParams::new(fill),
+            required_params,
             Some(self.auth),
         )
     }
 
-    pub fn deposit(&self, amount: f64, currency: &'a str, dep: DEP<'a>) -> QueryBuilder<'a, DepositsParams<'a>> {
+    pub fn deposit(&self, amount: f64, currency: &'a str, dep: DEP<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+        let mut required_params =  NoParams::new();
+        required_params.params_mut().amount = Some(amount);
+        required_params.params_mut().currency = Some(currency);
+
         let endpoint = match dep {
-            DEP::CBAccountID(_) => "/deposits/coinbase-account",
-            DEP::PYMTMethodID(_) => "/deposits/payment-method"
+            DEP::CBAccountID(id) => {
+                required_params.params_mut().coinbase_account_id = Some(id);
+                "/deposits/coinbase-account"
+            },
+            DEP::PYMTMethodID(id) => {
+                required_params.params_mut().payment_method_id = Some(id);
+                "/deposits/payment-method"
+            }
         };
+
         let url = self.url().join(endpoint).unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            DepositsParams::new(amount, currency, dep),
+            required_params,
             Some(self.auth),
         )
     }
 
-    pub fn withdraw(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, WithdrawalsParams<'a>> {
+    pub fn withdraw(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+        let mut required_params =  NoParams::new();
+        required_params.params_mut().amount = Some(amount);
+        required_params.params_mut().currency = Some(currency);
+
         let endpoint = match wdl {
-            WDL::CBAccountID(_) => "/withdrawals/coinbase-account",
-            WDL::PYMTMethodID(_) => "/withdrawals/payment-method",
-            WDL::Crypto { addr: _, tag: _ } => "/withdrawals/crypto",
+            WDL::CBAccountID(id) => {
+                required_params.params_mut().coinbase_account_id = Some(id);
+                "/withdrawals/coinbase-account"
+            },
+            WDL::PYMTMethodID(id) => {
+                required_params.params_mut().payment_method_id = Some(id);
+                "/withdrawals/payment-method"
+            },
+            WDL::Crypto { addr, tag } => {
+                required_params.params_mut().crypto_address = Some(addr);
+
+                if let Some(t) = tag {
+                    required_params.params_mut().destination_tag = Some(t);
+                } else {
+                    required_params.params_mut().no_destination_tag = Some(true);
+                }
+
+                "/withdrawals/crypto"
+            }
         };
+
         let url = self.url().join(endpoint).unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            WithdrawalsParams::new(amount, currency, wdl),
+            required_params,
             Some(self.auth),
         )
     }
 
-    pub fn convert(&self, from: &'a str, to: &'a str, amount: f64) -> QueryBuilder<'a, ConversionParams<'a>> {
+    pub fn convert(&self, from: &'a str, to: &'a str, amount: f64) -> QueryBuilder<'a, NoParams<'a>> {
+        let mut required_params =  NoParams::new();
+        required_params.params_mut().from = Some(from);
+        required_params.params_mut().to = Some(to);
+        required_params.params_mut().amount = Some(amount);
+
         let url = self.url().join("/conversions").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            ConversionParams::new(from, to, amount),
+            required_params,
             Some(self.auth),
         )
     }
@@ -303,12 +347,18 @@ impl<'a> AuthenticatedClient<'a> {
         )
     }
 
-    pub fn transfer_profile(&self, from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> QueryBuilder<'a, ProfileParams<'a>> {
+    pub fn transfer_profile(&self, from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> QueryBuilder<'a, NoParams<'a>> {
+        let mut required_params =  NoParams::new();
+        required_params.params_mut().from = Some(from);
+        required_params.params_mut().to = Some(to);
+        required_params.params_mut().currency = Some(currency);
+        required_params.params_mut().amount = Some(amount);
+        
         let url = self.url().join("/profiles/transfer").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            ProfileParams::new(from, to, currency, amount),
+            required_params,
             Some(self.auth),
         )
     }

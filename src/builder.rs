@@ -18,12 +18,12 @@ pub struct CBParams<'a> {
     end: Option<String>,
     granularity: Option<i32>,
     client_oid: Option<&'a str>,
-    order_id: Option<&'a str>,
+    pub(super) order_id: Option<&'a str>,
     #[serde(rename(serialize = "type"))]
     type_: Option<&'a str>,
     //limit
     side: Option<&'a str>,
-    product_id: Option<&'a str>,
+    pub(super) product_id: Option<&'a str>,
     stp: Option<&'a str>,
     stop: Option<&'a str>,
     stop_price: Option<f64>,
@@ -39,16 +39,16 @@ pub struct CBParams<'a> {
     pub(super) before: Option<i32>,
     after: Option<i32>,
     //deposits/withdrawals
-    amount: Option<f64>,
-    currency: Option<&'a str>,
-    payment_method_id: Option<&'a str>,
-    coinbase_account_id: Option<&'a str>,
-    crypto_address: Option<&'a str>,
-    destination_tag: Option<&'a str>,
-    no_destination_tag: Option<bool>,
+    pub(super) amount: Option<f64>,
+    pub(super) currency: Option<&'a str>,
+    pub(super) payment_method_id: Option<&'a str>,
+    pub(super) coinbase_account_id: Option<&'a str>,
+    pub(super) crypto_address: Option<&'a str>,
+    pub(super) destination_tag: Option<&'a str>,
+    pub(super) no_destination_tag: Option<bool>,
     //conversion
-    from: Option<&'a str>,
-    to: Option<&'a str>,
+    pub(super) from: Option<&'a str>,
+    pub(super) to: Option<&'a str>,
     //report
     start_date: Option<String>,
     end_date: Option<String>,
@@ -423,133 +423,6 @@ impl<'a> ClientOID<'a> for MarketOrderParams<'a> {
     }
 }
 
-pub struct FillsParams<'a> {
-    params: CBParams<'a>,
-}
-
-impl<'a> FillsParams<'a> {
-    pub fn new(id: FILL<'a>) -> Self {
-        let mut params =  CBParams::new();
-
-        match id {
-            FILL::OrderID(id) => params.order_id = Some(id),
-            FILL::ProductID(id) => params.product_id = Some(id)
-        }
-
-        Self {
-            params: params
-        }
-    }
-}
-
-impl<'a> Params<'a> for FillsParams<'a> {
-    fn params_mut(&mut self) -> &mut CBParams<'a> {
-        &mut self.params
-    }
-
-    fn params(&self) -> &CBParams<'a> {
-        &self.params
-    }
-}
-
-pub struct DepositsParams<'a> {
-    params: CBParams<'a>,
-}
-
-impl<'a> DepositsParams<'a> {
-    pub fn new(amount: f64, currency: &'a str, dep: DEP<'a>) -> Self {
-        let mut params =  CBParams::new();
-        params.amount = Some(amount);
-        params.currency = Some(currency);
-
-        match dep {
-            DEP::CBAccountID(id) => params.coinbase_account_id = Some(id),
-            DEP::PYMTMethodID(id) => params.payment_method_id = Some(id)
-        }
-
-        Self {
-            params: params
-        }
-    }
-}
-
-impl<'a> Params<'a> for DepositsParams<'a> {
-    fn params_mut(&mut self) -> &mut CBParams<'a> {
-        &mut self.params
-    }
-
-    fn params(&self) -> &CBParams<'a> {
-        &self.params
-    }
-}
-
-pub struct WithdrawalsParams<'a> {
-    params: CBParams<'a>,
-}
-
-impl<'a> WithdrawalsParams<'a> {
-    pub fn new(amount: f64, currency: &'a str, wdl: WDL<'a>) -> Self {
-        let mut params =  CBParams::new();
-        params.amount = Some(amount);
-        params.currency = Some(currency);
-
-        match wdl {
-            WDL::CBAccountID(id) => params.coinbase_account_id = Some(id),
-            WDL::PYMTMethodID(id) => params.payment_method_id = Some(id),
-            WDL::Crypto { addr, tag } => {
-                params.crypto_address = Some(addr);
-
-                if let Some(t) = tag {
-                    params.destination_tag = Some(t);
-                } else {
-                    params.no_destination_tag = Some(true);
-                }
-            }
-        }
-
-        Self {
-            params: params
-        }
-    }
-}
-
-impl<'a> Params<'a> for WithdrawalsParams<'a> {
-    fn params_mut(&mut self) -> &mut CBParams<'a> {
-        &mut self.params
-    }
-
-    fn params(&self) -> &CBParams<'a> {
-        &self.params
-    }
-}
-
-pub struct ConversionParams<'a> {
-    params: CBParams<'a>,
-}
-
-impl<'a> ConversionParams<'a> {
-    pub fn new(from: &'a str, to: &'a str, amount: f64) -> Self {
-        let mut params =  CBParams::new();
-        params.from = Some(from);
-        params.to = Some(to);
-        params.amount = Some(amount);
-
-        Self {
-            params: params
-        }
-    }
-}
-
-impl<'a> Params<'a> for ConversionParams<'a> {
-    fn params_mut(&mut self) -> &mut CBParams<'a> {
-        &mut self.params
-    }
-
-    fn params(&self) -> &CBParams<'a> {
-        &self.params
-    }
-}
-
 pub struct ReportParams<'a> {
     params: CBParams<'a>,
 }
@@ -593,34 +466,6 @@ impl<'a> Report<'a> for ReportParams<'a> {
     }
     fn set_email(&mut self, value: &'a str) {
         self.params_mut().email = Some(value);
-    }
-}
-
-pub struct ProfileParams<'a> {
-    params: CBParams<'a>,
-}
-
-impl<'a> ProfileParams<'a> {
-    pub fn new(from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> Self {
-        let mut params =  CBParams::new();
-        params.from = Some(from);
-        params.to = Some(to);
-        params.currency = Some(currency);
-        params.amount = Some(amount);
-
-        Self {
-            params: params
-        }
-    }
-}
-
-impl<'a> Params<'a> for ProfileParams<'a> {
-    fn params_mut(&mut self) -> &mut CBParams<'a> {
-        &mut self.params
-    }
-
-    fn params(&self) -> &CBParams<'a> {
-        &self.params
     }
 }
 //////////////////
