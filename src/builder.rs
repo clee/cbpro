@@ -1,4 +1,4 @@
-use crate::{stream::{Pages, Paginate}, Auth, QTY, FILL, DEP, WDL, RPT};
+use crate::{stream::{Pages, Paginated}, Auth, QTY, RPT};
 use chrono::offset::Utc;
 use chrono::{offset::TimeZone, DateTime};
 use hmac::{Hmac, Mac};
@@ -108,7 +108,7 @@ pub trait ProductID<'a> {
     fn set_product_id(&mut self, value: &'a str);
 }
 
-pub trait Paginated<'a> {
+pub trait Paginate<'a> {
     fn set_limit(&mut self, value: i32);
     fn set_before(&mut self, value: i32);
     fn set_after(&mut self, value: i32);
@@ -220,7 +220,7 @@ impl<'a> ProductID<'a> for ListOrderParams<'a> {
     }
 }
 
-impl<'a> Paginated<'a> for ListOrderParams<'a> {
+impl<'a> Paginate<'a> for ListOrderParams<'a> {
     fn set_limit(&mut self, value: i32) {
         self.params_mut().limit = Some(value);
     }
@@ -284,7 +284,7 @@ impl<'a> Params<'a> for PaginateParams<'a> {
     }
 }
 
-impl<'a> Paginated<'a> for PaginateParams<'a> {
+impl<'a> Paginate<'a> for PaginateParams<'a> {
     fn set_limit(&mut self, value: i32) {
         self.params_mut().limit = Some(value);
     }
@@ -577,7 +577,7 @@ impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<'a, T> {
     }
 }
 
-impl<'a, T: Params<'a> + Paginated<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> {
+impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> {
     pub fn limit(mut self, value: i32) -> Self {
         self.query.set_limit(value);
         self
@@ -594,7 +594,7 @@ impl<'a, T: Params<'a> + Paginated<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> 
     }
 
     pub fn paginate(self) -> Pages<'a> {
-        Paginate::new(self.client.clone(), self.signed_request(), self.query).pages()
+        Paginated::new(self.client.clone(), self.signed_request(), self.query).pages()
     }
 }
 

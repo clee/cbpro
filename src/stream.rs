@@ -5,7 +5,7 @@ use futures::{
     task::{Context, Poll},
 };
 use reqwest::{Error, Response, Client};
-use crate::builder::{Paginated, apply_query, Params};
+use crate::builder::{Paginate, apply_query, Params};
 use reqwest::Request;
 use serde_json::Value;
 
@@ -17,7 +17,7 @@ enum State {
 type ResponseFuture = BoxFuture<'static, Result<Response, Error>>;
 pub type Pages<'a> = BoxStream<'a, Result<Value, Error>>;
 
-pub(super) struct Paginate<T> {
+pub(super) struct Paginated<T> {
     in_flight: ResponseFuture,
     client: Client,
     request: Request,
@@ -25,7 +25,7 @@ pub(super) struct Paginate<T> {
     state: State
 }
 
-impl<'a, T: Params<'a> + Paginated<'a> + Send + Unpin + 'a> Paginate<T> {
+impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> Paginated<T> {
     pub(super) fn new(client: Client, request: Request, query: T) -> Self {
         Self {
             in_flight: client.execute(request.try_clone().unwrap()).boxed(),
@@ -41,7 +41,7 @@ impl<'a, T: Params<'a> + Paginated<'a> + Send + Unpin + 'a> Paginate<T> {
     }
 }
 
-impl<'a, T: Params<'a> + Paginated<'a> + Send + Unpin+ 'a> Stream for Paginate<T> {
+impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin+ 'a> Stream for Paginated<T> {
     type Item = Result<Response, Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
