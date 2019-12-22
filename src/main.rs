@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
     } */
 
-    let data = client.list_payment_methods().json().await?;
+    let data = client.list_accounts().json().await?;
     println!("{}", serde_json::to_string_pretty(&data).unwrap());
 
     Ok(())

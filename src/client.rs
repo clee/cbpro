@@ -66,7 +66,19 @@ impl<'a> AuthenticatedClient<'a> {
     pub fn public(&self) -> &PublicClient {
         &self.public
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let accounts = client.list_accounts().json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&accounts).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list_accounts(&self) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/accounts").unwrap();
         QueryBuilder::new(
@@ -76,7 +88,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-    
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let account = client.get_account("<account_id>").json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&account).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_account(&self, account_id: &str) -> QueryBuilder<'a, NoParams<'a>> {
         let endpoint = format!("/accounts/{}", account_id);
         let url = self.url().join(&endpoint).unwrap();
@@ -87,7 +111,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let history = client.get_account_history("<account_id>").json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&history).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_account_history(&self, account_id: &str) -> QueryBuilder<'a, PaginateParams<'a>> {
         let endpoint = format!("/accounts/{}/ledger", account_id);
         let url = self.url().join(&endpoint).unwrap();
@@ -98,7 +134,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let holds = client.get_holds("<account_id>").json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&holds).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_holds(&self, account_id: &str) -> QueryBuilder<'a, PaginateParams<'a>> {
         let endpoint = format!("/accounts/{}/holds", account_id);
         let url = self.url().join(&endpoint).unwrap();
@@ -109,7 +157,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.place_limit_order("BTC-USD", "buy", 7000.00, 10.00).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn place_limit_order(&self, product_id: &'a str, side: &'a str, price: f64, size: f64) -> QueryBuilder<'a, LimitOrderParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
@@ -119,7 +179,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, QTY};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.place_market_order("BTC-USD", "buy", QTY::Size(10.00)).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn place_market_order(&self, product_id: &'a str, side: &'a str, qty: QTY) -> QueryBuilder<'a, MarketOrderParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
@@ -129,7 +201,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, ORD};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.cancel_order(ORD::OrderID("<order_id>")).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn cancel_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoParams<'a>> {
         let endpoint = match ord {
             ORD::OrderID(id) => format!("/orders/{}", id),
@@ -143,7 +227,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.cancel_all().json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn cancel_all(&self) -> QueryBuilder<'a, CancelParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
@@ -153,7 +249,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let orders = client.list_orders(&["open"]).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&orders).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list_orders(&self, status: &[&str]) -> QueryBuilder<'a, ListOrderParams<'a>> {
         let url = self.url().join("/orders").unwrap();
         let status: Vec<_> = status.iter().map(|x| ("status", x)).collect();
@@ -164,7 +272,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, ORD};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let order = client.get_order(ORD::OrderID("<order_id>")).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&order).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoParams<'a>> {
         let endpoint = match ord {
             ORD::OrderID(id) => format!("/orders/{}", id),
@@ -178,7 +298,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, FILL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let fills = client.get_fills(FILL::ProductID("BTC-USD")).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&fills).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_fills(&self, fill: FILL<'a>) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/fills").unwrap();
 
@@ -195,7 +327,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, DEP};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.deposit(10.00, "BTC", DEP::CBAccountID("<account_id>")).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn deposit(&self, amount: f64, currency: &'a str, dep: DEP<'a>) -> QueryBuilder<'a, NoParams<'a>> {
         let mut required_params =  NoParams::new();
         required_params.params_mut().amount = Some(amount);
@@ -220,7 +364,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, WDL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.withdraw(10.00, "BTC", WDL::CBAccountID("<account_id>")).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn withdraw(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, NoParams<'a>> {
         let mut required_params =  NoParams::new();
         required_params.params_mut().amount = Some(amount);
@@ -256,7 +412,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.convert("USD", "USDC", 100.00).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn convert(&self, from: &'a str, to: &'a str, amount: f64) -> QueryBuilder<'a, NoParams<'a>> {
         let mut required_params =  NoParams::new();
         required_params.params_mut().from = Some(from);
@@ -271,7 +439,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let payment_methods = client.list_payment_methods().json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&payment_methods).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list_payment_methods(&self) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/payment-methods").unwrap();
         QueryBuilder::new(
@@ -281,7 +461,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let coinbase_accounts = client.list_coinbase_accounts().json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&coinbase_accounts).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list_coinbase_accounts(&self) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/coinbase-accounts").unwrap();
         QueryBuilder::new(
@@ -291,7 +483,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let current_fees = client.get_current_fees().json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&current_fees).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_current_fees(&self) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/fees").unwrap();
         QueryBuilder::new(
@@ -301,7 +505,23 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, RPT};
+    /// use chrono::{ TimeZone, Utc };
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
+    /// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
+    ///
+    /// let rates = client.create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" }).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn create_report<Tz: TimeZone>(&self, start_date: DateTime<Tz>, end_date: DateTime<Tz>, rpt: RPT<'a>) -> QueryBuilder<'a, ReportParams<'a>> 
         where
             Tz::Offset: core::fmt::Display,
@@ -314,7 +534,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let report_status = client.get_report_status("<report_id>").json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&report_status).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_report_status(&self, report_id: &'a str) -> QueryBuilder<'a, NoParams<'a>> {
         let endpoint = format!("/reports/:{}", report_id);
         let url = self.url().join(&endpoint).unwrap();
@@ -325,7 +557,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let profiles = client.list_profiles().json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&profiles).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn list_profiles(&self) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/profiles").unwrap();
         QueryBuilder::new(
@@ -335,7 +579,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let profile = client.get_profile("<profile_id>").json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&profile).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_profile(&self, profile_id: &'a str) -> QueryBuilder<'a, NoParams<'a>> {
         let endpoint = format!("/profiles/{}", profile_id);
         let url = self.url().join(&endpoint).unwrap();
@@ -346,7 +602,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.transfer_profile("<from_profile_id>", "<to_profile_id>", "BTC-USD", 10.00).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn transfer_profile(&self, from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> QueryBuilder<'a, NoParams<'a>> {
         let mut required_params =  NoParams::new();
         required_params.params_mut().from = Some(from);
@@ -362,7 +630,19 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
-
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let trailing_volume = client.get_trailing_volume().json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&trailing_volume).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get_trailing_volume(&self) -> QueryBuilder<'a, NoParams<'a>> {
         let url = self.url().join("/users/self/trailing-volume").unwrap();
         QueryBuilder::new(
