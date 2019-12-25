@@ -1,10 +1,13 @@
-use crate::{stream::{Pages, Paginated}, Auth, QTY, RPT};
-use chrono::{offset::{TimeZone, Utc}, DateTime};
-use hmac::{Hmac, Mac};
-use reqwest::{
-    header::{HeaderValue, CONTENT_TYPE},
-    Client, Request, Error
+use crate::{
+    stream::{Pages, Paginated},
+    Auth, QTY, RPT,
 };
+use actix_web::client::ClientRequest;
+use chrono::{
+    offset::{TimeZone, Utc},
+    DateTime,
+};
+use hmac::{Hmac, Mac};
 use serde::Serialize;
 use serde_json::Value;
 use sha2::Sha256;
@@ -147,7 +150,7 @@ pub struct NoParams<'a> {
 impl<'a> NoParams<'a> {
     pub(super) fn new() -> Self {
         Self {
-            params: CBParams::new()
+            params: CBParams::new(),
         }
     }
 }
@@ -169,7 +172,7 @@ pub struct CancelParams<'a> {
 impl<'a> CancelParams<'a> {
     pub(super) fn new() -> Self {
         Self {
-            params: CBParams::new()
+            params: CBParams::new(),
         }
     }
 }
@@ -197,7 +200,7 @@ pub struct ListOrderParams<'a> {
 impl<'a> ListOrderParams<'a> {
     pub(super) fn new() -> Self {
         Self {
-            params: CBParams::new()
+            params: CBParams::new(),
         }
     }
 }
@@ -239,7 +242,7 @@ pub struct BookParams<'a> {
 impl<'a> BookParams<'a> {
     pub(super) fn new() -> Self {
         Self {
-            params: CBParams::new()
+            params: CBParams::new(),
         }
     }
 }
@@ -267,7 +270,7 @@ pub struct PaginateParams<'a> {
 impl<'a> PaginateParams<'a> {
     pub(super) fn new() -> Self {
         Self {
-            params: CBParams::new()
+            params: CBParams::new(),
         }
     }
 }
@@ -302,11 +305,9 @@ pub struct CandleParams<'a> {
 
 impl<'a> CandleParams<'a> {
     pub(super) fn new(granularity: i32) -> Self {
-        let mut params =  CBParams::new();
+        let mut params = CBParams::new();
         params.granularity = Some(granularity);
-        Self {
-            params: params
-        }
+        Self { params: params }
     }
 }
 
@@ -329,22 +330,19 @@ impl<'a> Candle<'a> for CandleParams<'a> {
     }
 }
 
-
 pub struct LimitOrderParams<'a> {
     params: CBParams<'a>,
 }
 
 impl<'a> LimitOrderParams<'a> {
     pub(super) fn new(product_id: &'a str, side: &'a str, price: f64, size: f64) -> Self {
-        let mut params =  CBParams::new();
+        let mut params = CBParams::new();
         params.type_ = Some("limit");
         params.product_id = Some(product_id);
         params.side = Some(side);
         params.price = Some(price);
         params.size = Some(size);
-        Self {
-            params: params
-        }
+        Self { params: params }
     }
 }
 
@@ -391,7 +389,7 @@ pub struct MarketOrderParams<'a> {
 
 impl<'a> MarketOrderParams<'a> {
     pub(super) fn new(product_id: &'a str, side: &'a str, qty: QTY) -> Self {
-        let mut params =  CBParams::new();
+        let mut params = CBParams::new();
         params.type_ = Some("market");
         params.product_id = Some(product_id);
         params.side = Some(side);
@@ -399,9 +397,7 @@ impl<'a> MarketOrderParams<'a> {
             QTY::Size(value) => params.size = Some(value),
             QTY::Funds(value) => params.funds = Some(value),
         };
-        Self {
-            params: params
-        }
+        Self { params: params }
     }
 }
 
@@ -427,7 +423,7 @@ pub struct ReportParams<'a> {
 
 impl<'a> ReportParams<'a> {
     pub(super) fn new(start_date: String, end_date: String, rpt: RPT<'a>) -> Self {
-        let mut params =  CBParams::new();
+        let mut params = CBParams::new();
         params.start_date = Some(start_date);
         params.end_date = Some(end_date);
 
@@ -435,16 +431,14 @@ impl<'a> ReportParams<'a> {
             RPT::Fills { product_id } => {
                 params.product_id = Some(product_id);
                 params.type_ = Some("fills");
-            },
+            }
             RPT::Account { account_id } => {
                 params.account_id = Some(account_id);
                 params.type_ = Some("account");
-            },
+            }
         }
 
-        Self {
-            params: params
-        }
+        Self { params: params }
     }
 }
 
@@ -470,94 +464,84 @@ impl<'a> Report<'a> for ReportParams<'a> {
 
 type HmacSha256 = Hmac<Sha256>;
 
-pub(super) fn apply_query<T: Serialize>(req: &mut Request, query: &T) {
-    {
-        let url = req.url_mut();
-        let mut pairs = url.query_pairs_mut();
-        let serializer = serde_urlencoded::Serializer::new(&mut pairs);
-        query.serialize(serializer).unwrap();
-    }
-    if let Some("") = req.url().query() {
-        req.url_mut().set_query(None);
-    }
-}
+pub(super) fn sign_request<'a>(
+    request: ClientRequest,
+    body: Option<&CBParams<'a>>,
+    auth: Option<Auth<'a>>,
+) -> ClientRequest {
+    let request = request.header("User-Agent", "Actix-web");
+    
+    if let Some(auth) = auth {
+        let Auth { key, pass, secret } = auth;
 
-pub(super) fn apply_json<T: Serialize>(req: &mut Request, json: &T) {
-    let body = serde_json::to_vec(json).unwrap();
-    req.headers_mut().insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    *req.body_mut() = Some(body.into());
+        let timestamp = Utc::now().timestamp().to_string();
+        let method = request.get_method().as_str();
+
+        let path = if let Some(query) = request.get_uri().query() {
+            String::new() + request.get_uri().path() + "?" + query
+        } else {
+            request.get_uri().path().to_string()
+        };
+
+        let message = if let Some(json) = body {
+            timestamp.clone() + method + &path + &serde_json::to_string(json).unwrap()
+        } else {
+            timestamp.clone() + method + &path
+        };
+
+        let hmac_key = base64::decode(secret).unwrap();
+        let mut mac = HmacSha256::new_varkey(&hmac_key).unwrap();
+        mac.input(message.as_bytes());
+        let signature = mac.result().code();
+        let b64_signature = base64::encode(&signature);
+
+        let request = request
+            .header("CB-ACCESS-KEY", key)
+            .header("CB-ACCESS-PASSPHRASE", pass)
+            .header("CB-ACCESS-TIMESTAMP", &timestamp[..])
+            .header("CB-ACCESS-SIGN", &b64_signature[..]);
+        return request;
+    }
+    request
 }
 
 pub struct QueryBuilder<'a, T: Params<'a>> {
-    client: Client,
-    request: Request,
+    request: ClientRequest,
     query: T,
     auth: Option<Auth<'a>>,
 }
 
 impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
-    pub(super) fn new(
-        client: Client,
-        request: Request,
-        query: T,
-        auth: Option<Auth<'a>>,
-    ) -> Self {
+    pub(super) fn new(request: ClientRequest, query: T, auth: Option<Auth<'a>>) -> Self {
         Self {
-            client,
-            request,
+            request: request,
             query,
             auth,
         }
     }
 
-    fn signed_request(&self) -> Request {
-        let mut request = self.request.try_clone().unwrap();
+    pub async fn json(self) -> actix_web::Result<Value> {
+        let Self {
+            request,
+            query,
+            auth,
+        } = self;
 
-        if let &reqwest::Method::POST = request.method() {
-            apply_json(&mut request, self.query.params());
+        let value = if request.get_method().as_str() == "POST" {
+            sign_request(request, Some(query.params()), auth)
+                .send_json(query.params())
+                .await?
+                .json::<Value>()
+                .await?
         } else {
-            apply_query(&mut request, self.query.params());
-        }
-
-        if let Some(auth) = self.auth {
-            let Auth { key, pass, secret } = auth;
-
-            let timestamp = Utc::now().timestamp().to_string();
-            let method = request.method().as_str();
-
-            let path = if let Some(query) = request.url().query() {
-                String::new() + request.url().path() + "?" + query
-            } else {
-                request.url().path().to_string()
-            };
-
-            let message = if let Some(body) = request.body() {
-                timestamp.clone()
-                    + method
-                    + &path[..]
-                    + std::str::from_utf8(body.as_bytes().unwrap()).unwrap()
-            } else {
-                timestamp.clone() + method + &path[..]
-            };
-
-            let hmac_key = base64::decode(secret).unwrap();
-            let mut mac = HmacSha256::new_varkey(&hmac_key).unwrap();
-            mac.input(message.as_bytes());
-            let signature = mac.result().code();
-            let b64_signature = base64::encode(&signature);
-
-            request.headers_mut().insert("CB-ACCESS-KEY", key.parse().unwrap());
-            request.headers_mut().insert("CB-ACCESS-PASSPHRASE", pass.parse().unwrap());
-            request.headers_mut().insert("CB-ACCESS-TIMESTAMP", (&timestamp[..]).parse().unwrap());
-            request.headers_mut().insert("CB-ACCESS-SIGN", (&b64_signature[..]).parse().unwrap());
-        }
-        request
-    }
-
-    pub async fn json(self) -> Result<Value, Error> {
-        let request = self.signed_request();
-        println!("{:?}", &request.url().query());
-        self.client.execute(request).await?.json().await
+            let request = request.query(query.params())?;
+            sign_request(request, None, auth)
+                .send()
+                .await?
+                .json::<Value>()
+                .await?
+        };
+        Ok(value)
     }
 }
 
@@ -592,12 +576,12 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> {
     }
 
     pub fn paginate(self) -> Pages<'a> {
-        Paginated::new(self.client.clone(), self.signed_request(), self.query).pages()
+        Paginated::new(self.request.get_uri().to_string(), self.query, self.auth).pages()
     }
 }
 
 impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<'a, T> {
-    pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self 
+    pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self
     where
         Tz::Offset: core::fmt::Display,
     {
