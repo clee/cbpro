@@ -1,4 +1,4 @@
-use crate::{stream::{Pages, Paginated}, Auth, QTY, RPT};
+use crate::{paginated::{Pages, Paginated}, Auth, QTY, RPT};
 use chrono::{offset::{TimeZone, Utc}, DateTime};
 use hmac::{Hmac, Mac};
 use reqwest::{
