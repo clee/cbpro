@@ -79,12 +79,12 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list_accounts(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn list_accounts(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url().join("/accounts").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -101,13 +101,13 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_account(&self, account_id: &str) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_account(&self, account_id: &str) -> QueryBuilder<'a, NoOptions<'a>> {
         let endpoint = format!("/accounts/{}", account_id);
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -124,13 +124,13 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_account_history(&self, account_id: &str) -> QueryBuilder<'a, PaginateParams<'a>> {
+    pub fn get_account_history(&self, account_id: &str) -> QueryBuilder<'a, PaginateOptions<'a>> {
         let endpoint = format!("/accounts/{}/ledger", account_id);
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            PaginateParams::new(),
+            PaginateOptions::new(),
             Some(self.auth),
         )
     }
@@ -147,13 +147,13 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_holds(&self, account_id: &str) -> QueryBuilder<'a, PaginateParams<'a>> {
+    pub fn get_holds(&self, account_id: &str) -> QueryBuilder<'a, PaginateOptions<'a>> {
         let endpoint = format!("/accounts/{}/holds", account_id);
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            PaginateParams::new(),
+            PaginateOptions::new(),
             Some(self.auth),
         )
     }
@@ -170,12 +170,19 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn place_limit_order(&self, product_id: &'a str, side: &'a str, price: f64, size: f64) -> QueryBuilder<'a, LimitOrderParams<'a>> {
+    pub fn place_limit_order(&self, product_id: &'a str, side: &'a str, price: f64, size: f64) -> QueryBuilder<'a, LimitOrderOptions<'a>> {
+        let mut limit_options =  LimitOrderOptions::new();
+        limit_options.params_mut().type_ = Some("limit");
+        limit_options.params_mut().product_id = Some(product_id);
+        limit_options.params_mut().side = Some(side);
+        limit_options.params_mut().price = Some(price);
+        limit_options.params_mut().size = Some(size);
+        
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            LimitOrderParams::new(product_id, side, price, size),
+            limit_options,
             Some(self.auth),
         )
     }
@@ -192,12 +199,22 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn place_market_order(&self, product_id: &'a str, side: &'a str, qty: QTY) -> QueryBuilder<'a, MarketOrderParams<'a>> {
+    pub fn place_market_order(&self, product_id: &'a str, side: &'a str, qty: QTY) -> QueryBuilder<'a, MarketOrderOptions<'a>> {
+        let mut market_options =  MarketOrderOptions::new();
+        market_options.params_mut().type_ = Some("market");
+        market_options.params_mut().product_id = Some(product_id);
+        market_options.params_mut().side = Some(side);
+
+        match qty {
+            QTY::Size(value) => market_options.params_mut().size = Some(value),
+            QTY::Funds(value) => market_options.params_mut().funds = Some(value),
+        };
+        
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            MarketOrderParams::new(product_id, side, qty),
+            market_options,
             Some(self.auth),
         )
     }
@@ -214,7 +231,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn cancel_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn cancel_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoOptions<'a>> {
         let endpoint = match ord {
             ORD::OrderID(id) => format!("/orders/{}", id),
             ORD::ClientOID(id) => format!("/orders/client:{}", id)
@@ -223,7 +240,7 @@ impl<'a> AuthenticatedClient<'a> {
         QueryBuilder::new(
             self.client().clone(),
             self.client().delete(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -240,12 +257,12 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn cancel_all(&self) -> QueryBuilder<'a, CancelParams<'a>> {
+    pub fn cancel_all(&self) -> QueryBuilder<'a, CancelOptions<'a>> {
         let url = self.url().join("/orders").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().delete(url).build().unwrap(),
-            CancelParams::new(),
+            CancelOptions::new(),
             Some(self.auth),
         )
     }
@@ -262,13 +279,13 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list_orders(&self, status: &[&str]) -> QueryBuilder<'a, ListOrderParams<'a>> {
+    pub fn list_orders(&self, status: &[&str]) -> QueryBuilder<'a, ListOrderOptions<'a>> {
         let url = self.url().join("/orders").unwrap();
         let status: Vec<_> = status.iter().map(|x| ("status", x)).collect();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).query(&status).build().unwrap(),
-            ListOrderParams::new(),
+            ListOrderOptions::new(),
             Some(self.auth),
         )
     }
@@ -285,7 +302,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_order(&self, ord: ORD<'a>) -> QueryBuilder<'a, NoOptions<'a>> {
         let endpoint = match ord {
             ORD::OrderID(id) => format!("/orders/{}", id),
             ORD::ClientOID(id) => format!("/orders/client:{}", id)
@@ -294,7 +311,7 @@ impl<'a> AuthenticatedClient<'a> {
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -311,19 +328,19 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_fills(&self, fill: FILL<'a>) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_fills(&self, fill: FILL<'a>) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url().join("/fills").unwrap();
 
-        let mut required_params = NoParams::new();
+        let mut no_options = NoOptions::new();
         match fill {
-            FILL::OrderID(id) => required_params.params_mut().order_id = Some(id),
-            FILL::ProductID(id) => required_params.params_mut().product_id = Some(id)
+            FILL::OrderID(id) => no_options.params_mut().order_id = Some(id),
+            FILL::ProductID(id) => no_options.params_mut().product_id = Some(id)
         }
 
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            required_params,
+            no_options,
             Some(self.auth),
         )
     }
@@ -340,18 +357,18 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn deposit(&self, amount: f64, currency: &'a str, dep: DEP<'a>) -> QueryBuilder<'a, NoParams<'a>> {
-        let mut required_params =  NoParams::new();
-        required_params.params_mut().amount = Some(amount);
-        required_params.params_mut().currency = Some(currency);
+    pub fn deposit(&self, amount: f64, currency: &'a str, dep: DEP<'a>) -> QueryBuilder<'a, NoOptions<'a>> {
+        let mut no_options =  NoOptions::new();
+        no_options.params_mut().amount = Some(amount);
+        no_options.params_mut().currency = Some(currency);
 
         let endpoint = match dep {
             DEP::CBAccountID(id) => {
-                required_params.params_mut().coinbase_account_id = Some(id);
+                no_options.params_mut().coinbase_account_id = Some(id);
                 "/deposits/coinbase-account"
             },
             DEP::PYMTMethodID(id) => {
-                required_params.params_mut().payment_method_id = Some(id);
+                no_options.params_mut().payment_method_id = Some(id);
                 "/deposits/payment-method"
             }
         };
@@ -360,7 +377,7 @@ impl<'a> AuthenticatedClient<'a> {
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            required_params,
+            no_options,
             Some(self.auth),
         )
     }
@@ -377,27 +394,27 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn withdraw(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, NoParams<'a>> {
-        let mut required_params =  NoParams::new();
-        required_params.params_mut().amount = Some(amount);
-        required_params.params_mut().currency = Some(currency);
+    pub fn withdraw(&self, amount: f64, currency: &'a str, wdl: WDL<'a>) -> QueryBuilder<'a, NoOptions<'a>> {
+        let mut no_options = NoOptions::new();
+        no_options.params_mut().amount = Some(amount);
+        no_options.params_mut().currency = Some(currency);
 
         let endpoint = match wdl {
             WDL::CBAccountID(id) => {
-                required_params.params_mut().coinbase_account_id = Some(id);
+                no_options.params_mut().coinbase_account_id = Some(id);
                 "/withdrawals/coinbase-account"
             },
             WDL::PYMTMethodID(id) => {
-                required_params.params_mut().payment_method_id = Some(id);
+                no_options.params_mut().payment_method_id = Some(id);
                 "/withdrawals/payment-method"
             },
             WDL::Crypto { addr, tag } => {
-                required_params.params_mut().crypto_address = Some(addr);
+                no_options.params_mut().crypto_address = Some(addr);
 
                 if let Some(t) = tag {
-                    required_params.params_mut().destination_tag = Some(t);
+                    no_options.params_mut().destination_tag = Some(t);
                 } else {
-                    required_params.params_mut().no_destination_tag = Some(true);
+                    no_options.params_mut().no_destination_tag = Some(true);
                 }
 
                 "/withdrawals/crypto"
@@ -408,7 +425,7 @@ impl<'a> AuthenticatedClient<'a> {
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            required_params,
+            no_options,
             Some(self.auth),
         )
     }
@@ -425,17 +442,17 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn convert(&self, from: &'a str, to: &'a str, amount: f64) -> QueryBuilder<'a, NoParams<'a>> {
-        let mut required_params =  NoParams::new();
-        required_params.params_mut().from = Some(from);
-        required_params.params_mut().to = Some(to);
-        required_params.params_mut().amount = Some(amount);
+    pub fn convert(&self, from: &'a str, to: &'a str, amount: f64) -> QueryBuilder<'a, NoOptions<'a>> {
+        let mut no_options =  NoOptions::new();
+        no_options.params_mut().from = Some(from);
+        no_options.params_mut().to = Some(to);
+        no_options.params_mut().amount = Some(amount);
 
         let url = self.url().join("/conversions").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            required_params,
+            no_options,
             Some(self.auth),
         )
     }
@@ -452,12 +469,12 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list_payment_methods(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn list_payment_methods(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url().join("/payment-methods").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -474,12 +491,12 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list_coinbase_accounts(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn list_coinbase_accounts(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url().join("/coinbase-accounts").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -496,12 +513,12 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_current_fees(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_current_fees(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url().join("/fees").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -522,15 +539,30 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn create_report<Tz: TimeZone>(&self, start_date: DateTime<Tz>, end_date: DateTime<Tz>, rpt: RPT<'a>) -> QueryBuilder<'a, ReportParams<'a>> 
+    pub fn create_report<Tz: TimeZone>(&self, start_date: DateTime<Tz>, end_date: DateTime<Tz>, rpt: RPT<'a>) -> QueryBuilder<'a, ReportOptions<'a>> 
         where
             Tz::Offset: core::fmt::Display,
     {
+        let mut report_options =  ReportOptions::new();
+        report_options.params_mut().start_date = Some(start_date.to_rfc3339());
+        report_options.params_mut().end_date = Some(end_date.to_rfc3339());
+
+        match rpt {
+            RPT::Fills { product_id } => {
+                report_options.params_mut().product_id = Some(product_id);
+                report_options.params_mut().type_ = Some("fills");
+            },
+            RPT::Account { account_id } => {
+                report_options.params_mut().account_id = Some(account_id);
+                report_options.params_mut().type_ = Some("account");
+            },
+        }
+
         let url = self.url().join("/reports").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            ReportParams::new(start_date.to_rfc3339(), end_date.to_rfc3339(), rpt),
+            report_options,
             Some(self.auth),
         )
     }
@@ -547,13 +579,13 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_report_status(&self, report_id: &'a str) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_report_status(&self, report_id: &'a str) -> QueryBuilder<'a, NoOptions<'a>> {
         let endpoint = format!("/reports/:{}", report_id);
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -570,12 +602,12 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn list_profiles(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn list_profiles(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url().join("/profiles").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -592,13 +624,13 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_profile(&self, profile_id: &'a str) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_profile(&self, profile_id: &'a str) -> QueryBuilder<'a, NoOptions<'a>> {
         let endpoint = format!("/profiles/{}", profile_id);
         let url = self.url().join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -615,18 +647,18 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn transfer_profile(&self, from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> QueryBuilder<'a, NoParams<'a>> {
-        let mut required_params =  NoParams::new();
-        required_params.params_mut().from = Some(from);
-        required_params.params_mut().to = Some(to);
-        required_params.params_mut().currency = Some(currency);
-        required_params.params_mut().amount = Some(amount);
+    pub fn transfer_profile(&self, from: &'a str, to: &'a str, currency: &'a str, amount: f64) -> QueryBuilder<'a, NoOptions<'a>> {
+        let mut no_options =  NoOptions::new();
+        no_options.params_mut().from = Some(from);
+        no_options.params_mut().to = Some(to);
+        no_options.params_mut().currency = Some(currency);
+        no_options.params_mut().amount = Some(amount);
         
         let url = self.url().join("/profiles/transfer").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().post(url).build().unwrap(),
-            required_params,
+            no_options,
             Some(self.auth),
         )
     }
@@ -643,12 +675,12 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_trailing_volume(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_trailing_volume(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url().join("/users/self/trailing-volume").unwrap();
         QueryBuilder::new(
             self.client().clone(),
             self.client().get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             Some(self.auth),
         )
     }
@@ -679,12 +711,12 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_products<'a>(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_products<'a>(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url.join("/products").unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             None,
         )
     }
@@ -701,13 +733,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_order_book<'a>(&self, product_id: &str) -> QueryBuilder<'a, BookParams<'a>> {
+    pub fn get_product_order_book<'a>(&self, product_id: &str) -> QueryBuilder<'a, BookOptions<'a>> {
         let endpoint = format!("/products/{}/book", product_id);
         let url = self.url.join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            BookParams::new(),
+            BookOptions::new(),
             None,
         )
     }
@@ -724,13 +756,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_product_ticker<'a>(&self, product_id: &str) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_product_ticker<'a>(&self, product_id: &str) -> QueryBuilder<'a, NoOptions<'a>> {
         let endpoint = format!("/products/{}/ticker", product_id);
         let url = self.url.join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             None,
         )
     }
@@ -752,13 +784,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_trades<'a>(&self, product_id: &str) -> QueryBuilder<'a, PaginateParams<'a>> {
+    pub fn get_trades<'a>(&self, product_id: &str) -> QueryBuilder<'a, PaginateOptions<'a>> {
         let endpoint = format!("/products/{}/trades", product_id);
         let url = self.url.join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            PaginateParams::new(),
+            PaginateOptions::new(),
             None,
         )
     }
@@ -778,13 +810,16 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_historic_rates<'a>(&self, product_id: &str, granularity: i32) -> QueryBuilder<'a, CandleParams<'a>>{
+    pub fn get_historic_rates<'a>(&self, product_id: &str, granularity: i32) -> QueryBuilder<'a, CandleOptions<'a>>{
+        let mut candle_options =  CandleOptions::new();
+        candle_options.params_mut().granularity = Some(granularity);
+        
         let endpoint = format!("/products/{}/candles", product_id);
         let url = self.url.join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            CandleParams::new(granularity),
+            candle_options,
             None,
         )
     }
@@ -801,13 +836,13 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_24hr_stats<'a>(&self, product_id: &str) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_24hr_stats<'a>(&self, product_id: &str) -> QueryBuilder<'a, NoOptions<'a>> {
         let endpoint = format!("/products/{}/stats", product_id);
         let url = self.url.join(&endpoint).unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             None,
         )
     }
@@ -824,12 +859,12 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_currencies<'a>(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_currencies<'a>(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url.join("/currencies").unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             None,
         )
     }
@@ -846,12 +881,12 @@ impl PublicClient {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_time<'a>(&self) -> QueryBuilder<'a, NoParams<'a>> {
+    pub fn get_time<'a>(&self) -> QueryBuilder<'a, NoOptions<'a>> {
         let url = self.url.join("/time").unwrap();
         QueryBuilder::new(
             self.client.clone(),
             self.client.get(url).build().unwrap(),
-            NoParams::new(),
+            NoOptions::new(),
             None,
         )
     }

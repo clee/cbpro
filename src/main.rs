@@ -1,4 +1,4 @@
-use cbpro::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
+use cbpro::websocket::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
 use futures::TryStreamExt;
 
 #[tokio::main]

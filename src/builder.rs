@@ -1,4 +1,4 @@
-use crate::{paginated::{Pages, Paginated}, Auth, QTY, RPT};
+use crate::{pagination::{Pages, Paginated}, client::Auth};
 use chrono::{offset::{TimeZone, Utc}, DateTime};
 use hmac::{Hmac, Mac};
 use reqwest::{
@@ -14,24 +14,24 @@ pub struct CBParams<'a> {
     level: Option<i32>,
     start: Option<String>,
     end: Option<String>,
-    granularity: Option<i32>,
+    pub(super) granularity: Option<i32>,
     client_oid: Option<&'a str>,
     pub(super) order_id: Option<&'a str>,
     #[serde(rename(serialize = "type"))]
-    type_: Option<&'a str>,
+    pub(super) type_: Option<&'a str>,
     //limit
-    side: Option<&'a str>,
+    pub(super) side: Option<&'a str>,
     pub(super) product_id: Option<&'a str>,
     stp: Option<&'a str>,
     stop: Option<&'a str>,
     stop_price: Option<f64>,
-    price: Option<f64>,
-    size: Option<f64>,
+    pub(super) price: Option<f64>,
+    pub(super) size: Option<f64>,
     time_in_force: Option<&'a str>,
     cancel_after: Option<&'a str>,
     post_only: Option<bool>,
     //market
-    funds: Option<f64>,
+    pub(super) funds: Option<f64>,
     //paginate
     limit: Option<i32>,
     pub(super) before: Option<i32>,
@@ -48,11 +48,11 @@ pub struct CBParams<'a> {
     pub(super) from: Option<&'a str>,
     pub(super) to: Option<&'a str>,
     //report
-    start_date: Option<String>,
-    end_date: Option<String>,
+    pub(super) start_date: Option<String>,
+    pub(super) end_date: Option<String>,
     format: Option<&'a str>,
     email: Option<&'a str>,
-    account_id: Option<&'a str>,
+    pub(super) account_id: Option<&'a str>,
 }
 
 impl<'a> CBParams<'a> {
@@ -140,11 +140,11 @@ pub trait Report<'a> {
 }
 //////////////////////////////////////////////////
 
-pub struct NoParams<'a> {
+pub struct NoOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> NoParams<'a> {
+impl<'a> NoOptions<'a> {
     pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
@@ -152,7 +152,7 @@ impl<'a> NoParams<'a> {
     }
 }
 
-impl<'a> Params<'a> for NoParams<'a> {
+impl<'a> Params<'a> for NoOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -162,11 +162,11 @@ impl<'a> Params<'a> for NoParams<'a> {
     }
 }
 
-pub struct CancelParams<'a> {
+pub struct CancelOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> CancelParams<'a> {
+impl<'a> CancelOptions<'a> {
     pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
@@ -174,7 +174,7 @@ impl<'a> CancelParams<'a> {
     }
 }
 
-impl<'a> Params<'a> for CancelParams<'a> {
+impl<'a> Params<'a> for CancelOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -184,17 +184,17 @@ impl<'a> Params<'a> for CancelParams<'a> {
     }
 }
 
-impl<'a> ProductID<'a> for CancelParams<'a> {
+impl<'a> ProductID<'a> for CancelOptions<'a> {
     fn set_product_id(&mut self, value: &'a str) {
         self.params_mut().product_id = Some(value);
     }
 }
 
-pub struct ListOrderParams<'a> {
+pub struct ListOrderOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> ListOrderParams<'a> {
+impl<'a> ListOrderOptions<'a> {
     pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
@@ -202,7 +202,7 @@ impl<'a> ListOrderParams<'a> {
     }
 }
 
-impl<'a> Params<'a> for ListOrderParams<'a> {
+impl<'a> Params<'a> for ListOrderOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -212,13 +212,13 @@ impl<'a> Params<'a> for ListOrderParams<'a> {
     }
 }
 
-impl<'a> ProductID<'a> for ListOrderParams<'a> {
+impl<'a> ProductID<'a> for ListOrderOptions<'a> {
     fn set_product_id(&mut self, value: &'a str) {
         self.params_mut().product_id = Some(value);
     }
 }
 
-impl<'a> Paginate<'a> for ListOrderParams<'a> {
+impl<'a> Paginate<'a> for ListOrderOptions<'a> {
     fn set_limit(&mut self, value: i32) {
         self.params_mut().limit = Some(value);
     }
@@ -232,11 +232,11 @@ impl<'a> Paginate<'a> for ListOrderParams<'a> {
     }
 }
 
-pub struct BookParams<'a> {
+pub struct BookOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> BookParams<'a> {
+impl<'a> BookOptions<'a> {
     pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
@@ -244,7 +244,7 @@ impl<'a> BookParams<'a> {
     }
 }
 
-impl<'a> Params<'a> for BookParams<'a> {
+impl<'a> Params<'a> for BookOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -254,17 +254,17 @@ impl<'a> Params<'a> for BookParams<'a> {
     }
 }
 
-impl<'a> Book<'a> for BookParams<'a> {
+impl<'a> Book<'a> for BookOptions<'a> {
     fn set_level(&mut self, value: i32) {
         self.params_mut().level = Some(value);
     }
 }
 
-pub struct PaginateParams<'a> {
+pub struct PaginateOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> PaginateParams<'a> {
+impl<'a> PaginateOptions<'a> {
     pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
@@ -272,7 +272,7 @@ impl<'a> PaginateParams<'a> {
     }
 }
 
-impl<'a> Params<'a> for PaginateParams<'a> {
+impl<'a> Params<'a> for PaginateOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -282,7 +282,7 @@ impl<'a> Params<'a> for PaginateParams<'a> {
     }
 }
 
-impl<'a> Paginate<'a> for PaginateParams<'a> {
+impl<'a> Paginate<'a> for PaginateOptions<'a> {
     fn set_limit(&mut self, value: i32) {
         self.params_mut().limit = Some(value);
     }
@@ -296,21 +296,19 @@ impl<'a> Paginate<'a> for PaginateParams<'a> {
     }
 }
 
-pub struct CandleParams<'a> {
+pub struct CandleOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> CandleParams<'a> {
-    pub(super) fn new(granularity: i32) -> Self {
-        let mut params =  CBParams::new();
-        params.granularity = Some(granularity);
+impl<'a> CandleOptions<'a> {
+    pub(super) fn new() -> Self {
         Self {
-            params: params
+            params: CBParams::new()
         }
     }
 }
 
-impl<'a> Params<'a> for CandleParams<'a> {
+impl<'a> Params<'a> for CandleOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -320,7 +318,7 @@ impl<'a> Params<'a> for CandleParams<'a> {
     }
 }
 
-impl<'a> Candle<'a> for CandleParams<'a> {
+impl<'a> Candle<'a> for CandleOptions<'a> {
     fn set_start(&mut self, value: String) {
         self.params_mut().start = Some(value);
     }
@@ -330,25 +328,19 @@ impl<'a> Candle<'a> for CandleParams<'a> {
 }
 
 
-pub struct LimitOrderParams<'a> {
+pub struct LimitOrderOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> LimitOrderParams<'a> {
-    pub(super) fn new(product_id: &'a str, side: &'a str, price: f64, size: f64) -> Self {
-        let mut params =  CBParams::new();
-        params.type_ = Some("limit");
-        params.product_id = Some(product_id);
-        params.side = Some(side);
-        params.price = Some(price);
-        params.size = Some(size);
+impl<'a> LimitOrderOptions<'a> {
+    pub(super) fn new() -> Self {
         Self {
-            params: params
+            params: CBParams::new()
         }
     }
 }
 
-impl<'a> Params<'a> for LimitOrderParams<'a> {
+impl<'a> Params<'a> for LimitOrderOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -358,13 +350,13 @@ impl<'a> Params<'a> for LimitOrderParams<'a> {
     }
 }
 
-impl<'a> ClientOID<'a> for LimitOrderParams<'a> {
+impl<'a> ClientOID<'a> for LimitOrderOptions<'a> {
     fn set_client_oid(&mut self, value: &'a str) {
         self.params_mut().client_oid = Some(value);
     }
 }
 
-impl<'a> Limit<'a> for LimitOrderParams<'a> {
+impl<'a> Limit<'a> for LimitOrderOptions<'a> {
     fn set_stp(&mut self, value: &'a str) {
         self.params_mut().stp = Some(value);
     }
@@ -385,27 +377,19 @@ impl<'a> Limit<'a> for LimitOrderParams<'a> {
     }
 }
 
-pub struct MarketOrderParams<'a> {
+pub struct MarketOrderOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> MarketOrderParams<'a> {
-    pub(super) fn new(product_id: &'a str, side: &'a str, qty: QTY) -> Self {
-        let mut params =  CBParams::new();
-        params.type_ = Some("market");
-        params.product_id = Some(product_id);
-        params.side = Some(side);
-        match qty {
-            QTY::Size(value) => params.size = Some(value),
-            QTY::Funds(value) => params.funds = Some(value),
-        };
+impl<'a> MarketOrderOptions<'a> {
+    pub(super) fn new() -> Self {
         Self {
-            params: params
+            params: CBParams::new()
         }
     }
 }
 
-impl<'a> Params<'a> for MarketOrderParams<'a> {
+impl<'a> Params<'a> for MarketOrderOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -415,40 +399,25 @@ impl<'a> Params<'a> for MarketOrderParams<'a> {
     }
 }
 
-impl<'a> ClientOID<'a> for MarketOrderParams<'a> {
+impl<'a> ClientOID<'a> for MarketOrderOptions<'a> {
     fn set_client_oid(&mut self, value: &'a str) {
         self.params_mut().client_oid = Some(value);
     }
 }
 
-pub struct ReportParams<'a> {
+pub struct ReportOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> ReportParams<'a> {
-    pub(super) fn new(start_date: String, end_date: String, rpt: RPT<'a>) -> Self {
-        let mut params =  CBParams::new();
-        params.start_date = Some(start_date);
-        params.end_date = Some(end_date);
-
-        match rpt {
-            RPT::Fills { product_id } => {
-                params.product_id = Some(product_id);
-                params.type_ = Some("fills");
-            },
-            RPT::Account { account_id } => {
-                params.account_id = Some(account_id);
-                params.type_ = Some("account");
-            },
-        }
-
+impl<'a> ReportOptions<'a> {
+    pub(super) fn new() -> Self {
         Self {
-            params: params
+            params: CBParams::new()
         }
     }
 }
 
-impl<'a> Params<'a> for ReportParams<'a> {
+impl<'a> Params<'a> for ReportOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -458,7 +427,7 @@ impl<'a> Params<'a> for ReportParams<'a> {
     }
 }
 
-impl<'a> Report<'a> for ReportParams<'a> {
+impl<'a> Report<'a> for ReportOptions<'a> {
     fn set_format(&mut self, value: &'a str) {
         self.params_mut().format = Some(value);
     }

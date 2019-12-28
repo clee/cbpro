@@ -1,8 +1,8 @@
-mod paginated;
-mod client;
-mod websocket_feed;
+mod pagination;
+pub mod client;
+pub mod websocket;
 pub mod builder;
 
-pub use self::paginated::{Pages};
-pub use self::websocket_feed::*;
-pub use self::client::*;
+pub use self::pagination::{Pages};
+//pub use self::websocket::*;
+//pub use self::client::*;
