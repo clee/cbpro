@@ -555,9 +555,7 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
     }
 
     pub async fn json(self) -> Result<Value, Error> {
-        let request = self.signed_request();
-        println!("{:?}", &request.url().query());
-        self.client.execute(request).await?.json().await
+        self.client.execute(self.signed_request()).await?.json().await
     }
 }
 

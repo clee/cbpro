@@ -136,7 +136,6 @@ impl<'a> WebSocketFeed<'a> {
         };
         let message = SubscribeMessage {type_: "subscribe", product_ids, channels, auth};
         let message = serde_json::to_string(&message).unwrap();
-        println!("{:?}", message);
         self.send(Message::Text(message)).await?;
 
         Ok(())
