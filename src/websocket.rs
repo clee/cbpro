@@ -22,7 +22,7 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use crate::client::Auth;
 
-pub const WEBSOCKET_FEED_URL: &'static str = "wss://ws-feed.pro.coinbase.com";
+pub const WEBSOCKET_FEED_URL: &'static str = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 pub struct Channels;
 
@@ -58,7 +58,7 @@ impl<'a> WebSocketFeed<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
+    /// use cbpro::websocket::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
     /// use futures::TryStreamExt;
     ///
     /// # #[tokio::main]
@@ -86,7 +86,7 @@ impl<'a> WebSocketFeed<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
+    /// use cbpro::websocket::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
     /// use futures::TryStreamExt;
     ///
     /// # #[tokio::main]

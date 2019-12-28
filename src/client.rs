@@ -69,7 +69,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -91,7 +91,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -114,7 +114,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -137,7 +137,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -160,7 +160,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -189,7 +189,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, QTY};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, QTY};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -221,7 +221,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, ORD};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, ORD};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -247,7 +247,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -269,7 +269,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -292,7 +292,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, ORD};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, ORD};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -318,7 +318,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, FILL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, FILL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -347,7 +347,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, DEP};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, DEP};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -384,7 +384,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, WDL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, WDL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -432,7 +432,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -459,7 +459,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -481,7 +481,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -503,7 +503,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -525,7 +525,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL, RPT};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
     /// use chrono::{ TimeZone, Utc };
     ///
     /// # #[tokio::main]
@@ -569,7 +569,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -592,7 +592,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -614,7 +614,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -637,7 +637,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -665,7 +665,7 @@ impl<'a> AuthenticatedClient<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -701,7 +701,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -723,7 +723,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -746,7 +746,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -769,7 +769,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     /// use futures::stream::TryStreamExt;
     ///
     /// # #[tokio::main]
@@ -797,7 +797,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -826,7 +826,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -849,7 +849,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -871,7 +871,7 @@ impl PublicClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::{PublicClient, SANDBOX_URL};
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
