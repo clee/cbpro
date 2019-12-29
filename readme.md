@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 ## Api supported:
-- [] SYNC
+- [ ] SYNC
 - [x] ASYNC
 - [x] Websocket-Feed
 

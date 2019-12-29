@@ -23,7 +23,7 @@ use sha2::Sha256;
 use crate::client::Auth;
 use crate::error::{Error, Kind};
 
-pub const WEBSOCKET_FEED_URL: &'static str = "wss://ws-feed-public.sandbox.pro.coinbase.com";
+pub const SANDBOX_FEED_URL: &'static str = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
 pub struct Channels;
 
