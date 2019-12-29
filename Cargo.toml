@@ -3,11 +3,15 @@ name = "cbpro"
 version = "0.1.0"
 authors = ["kgeronim <kevin.geronimo@outlook.com>"]
 edition = "2018"
+description = "Client library for Coinbase Pro"
+documentation = "https://docs.rs/cbpro"
+repository = "https://github.com/kgeronim/cbpro"
+keywords = ["coinbase", "gdax", "crypto", "exchange", "trade"]
+categories = ["api-bindings", "Cryptocurrencies"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "0.2.0-alpha.6", features = ["macros"] }
 serde_json = "1.0.44"
 reqwest = { version = "0.10.0-alpha.2", features = ["json"] }
 futures = "0.3.1"
@@ -28,3 +32,4 @@ features = ["std"]
 
 [dev-dependencies]
 tokio-timer = "0.3.0-alpha.5"
+tokio = { version = "0.2.0-alpha.6", features = ["macros"] }
