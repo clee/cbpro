@@ -1,13 +1,14 @@
-use crate::{pagination::{Pages, Paginated}, client::Auth};
+use crate::{paging::{Pages, Paginated}, client::Auth};
 use chrono::{offset::{TimeZone, Utc}, DateTime};
 use hmac::{Hmac, Mac};
 use reqwest::{
     header::{HeaderValue, CONTENT_TYPE},
-    Client, Request, Error
+    Client, Request
 };
 use serde::Serialize;
 use serde_json::Value;
 use sha2::Sha256;
+use crate::error::CBError;
 
 #[derive(Serialize)]
 pub struct CBParams<'a> {
@@ -439,22 +440,24 @@ impl<'a> Report<'a> for ReportOptions<'a> {
 
 type HmacSha256 = Hmac<Sha256>;
 
-pub(super) fn apply_query<T: Serialize>(req: &mut Request, query: &T) {
+pub(super) fn apply_query<T: Serialize>(req: &mut Request, query: &T) -> crate::error::Result<()> {
     {
         let url = req.url_mut();
         let mut pairs = url.query_pairs_mut();
         let serializer = serde_urlencoded::Serializer::new(&mut pairs);
-        query.serialize(serializer).unwrap();
+        query.serialize(serializer)?;
     }
     if let Some("") = req.url().query() {
         req.url_mut().set_query(None);
     }
+    Ok(())
 }
 
-pub(super) fn apply_json<T: Serialize>(req: &mut Request, json: &T) {
-    let body = serde_json::to_vec(json).unwrap();
+pub(super) fn apply_json<T: Serialize>(req: &mut Request, json: &T) -> crate::error::Result<()> {
+    let body = serde_json::to_vec(json)?;
     req.headers_mut().insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     *req.body_mut() = Some(body.into());
+    Ok(())
 }
 
 pub struct QueryBuilder<'a, T: Params<'a>> {
@@ -479,13 +482,13 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
         }
     }
 
-    fn signed_request(&self) -> Request {
+    fn auth_request(&self) -> crate::error::Result<Request> {
         let mut request = self.request.try_clone().unwrap();
 
         if let &reqwest::Method::POST = request.method() {
-            apply_json(&mut request, self.query.params());
+            apply_json(&mut request, self.query.params())?;
         } else {
-            apply_query(&mut request, self.query.params());
+            apply_query(&mut request, self.query.params())?;
         }
 
         if let Some(auth) = self.auth {
@@ -504,13 +507,13 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
                 timestamp.clone()
                     + method
                     + &path[..]
-                    + std::str::from_utf8(body.as_bytes().unwrap()).unwrap()
+                    + std::str::from_utf8(body.as_bytes().unwrap())?
             } else {
                 timestamp.clone() + method + &path[..]
             };
 
-            let hmac_key = base64::decode(secret).unwrap();
-            let mut mac = HmacSha256::new_varkey(&hmac_key).unwrap();
+            let hmac_key = base64::decode(secret)?;
+            let mut mac = HmacSha256::new_varkey(&hmac_key)?;
             mac.input(message.as_bytes());
             let signature = mac.result().code();
             let b64_signature = base64::encode(&signature);
@@ -520,11 +523,18 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
             request.headers_mut().insert("CB-ACCESS-TIMESTAMP", (&timestamp[..]).parse().unwrap());
             request.headers_mut().insert("CB-ACCESS-SIGN", (&b64_signature[..]).parse().unwrap());
         }
-        request
+
+        Ok(request)
     }
 
-    pub async fn json(self) -> Result<Value, Error> {
-        self.client.execute(self.signed_request()).await?.json().await
+    pub async fn json(self) -> crate::error::Result<Value> {
+        let resp = self.client.execute(self.auth_request()?).await?;
+        if resp.status().is_success() {
+            Ok(resp.json().await?)
+        } else {
+            let error = CBError::new(resp.status().as_u16(), resp.text().await?);
+            Err(error.into())
+        }   
     }
 }
 
@@ -558,8 +568,9 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> {
         self
     }
 
-    pub fn paginate(self) -> Pages<'a> {
-        Paginated::new(self.client.clone(), self.signed_request(), self.query).pages()
+    pub fn paginate(self) -> crate::error::Result<Pages<'a>> {
+        let pages = Paginated::new(self.client.clone(), self.auth_request()?, self.query).pages();
+        Ok(pages)
     }
 }
 

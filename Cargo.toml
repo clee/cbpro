@@ -19,6 +19,7 @@ base64 = "0.11.0"
 sha2 = "0.8.0"
 async-tungstenite = "0.2.1"
 url = "2.1.0"
+crypto-mac = { version = "0.7.0", features = ["std"] }
 
 [dependencies.async-std]
 version = "1.4.0"

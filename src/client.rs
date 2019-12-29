@@ -775,7 +775,7 @@ impl PublicClient {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = PublicClient::new(SANDBOX_URL);
-    /// let mut stream = client.get_trades("BTC-USD").paginate();
+    /// let mut stream = client.get_trades("BTC-USD").paginate()?;
     ///
     /// while let Some(json) = stream.try_next().await? {
     ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());

@@ -7,7 +7,7 @@ use futures::{
 };
 use async_tungstenite::{WebSocketStream, MaybeTlsStream};
 use async_tungstenite::tungstenite::{
-    Message, error::Error, protocol::{
+    Message, protocol::{
         CloseFrame, 
         frame::coding::CloseCode
     }
@@ -21,6 +21,7 @@ use chrono::Utc;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use crate::client::Auth;
+use crate::error::{Error, Kind};
 
 pub const WEBSOCKET_FEED_URL: &'static str = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 
@@ -72,7 +73,7 @@ impl<'a> WebSocketFeed<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect(url: &str) -> Result<WebSocketFeed<'a>, Error> {
+    pub async fn connect(url: &str) -> crate::error::Result<WebSocketFeed<'a>> {
     
         let url = url::Url::parse(url).unwrap();
         let (ws_stream, _) = connect_async(url).await?;
@@ -100,7 +101,7 @@ impl<'a> WebSocketFeed<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect_auth(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> Result<WebSocketFeed<'a>, Error> {
+    pub async fn connect_auth(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> crate::error::Result<WebSocketFeed<'a>> {
     
         let url = url::Url::parse(url).unwrap();
         let (ws_stream, _) = connect_async(url).await?;
@@ -112,7 +113,7 @@ impl<'a> WebSocketFeed<'a> {
         
     }
 
-    pub async fn subscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> Result<(), Error> {
+    pub async fn subscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> crate::error::Result<()> {
         let auth = match self.auth {
             Some(auth) => {
                 let timestamp = Utc::now().timestamp().to_string();
@@ -141,7 +142,7 @@ impl<'a> WebSocketFeed<'a> {
         Ok(())
     }
 
-    pub async fn unsubscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> Result<(), Error> {
+    pub async fn unsubscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> crate::error::Result<()> {
         let message = SubscribeMessage {type_: "unsubscribe", product_ids, channels, auth: None};
         let message = serde_json::to_string(&message).unwrap();
         self.send(Message::Text(message)).await?;
@@ -156,20 +157,21 @@ impl<'a> WebSocketFeed<'a> {
         &mut self.inner
     }
 
-    pub async fn close(mut self) -> Result<(), Error> {
+    pub async fn close(mut self) -> crate::error::Result<()> {
         let close_frame = CloseFrame {code: CloseCode::Normal, reason: "closed manually".to_string().into()};
-        self.inner.close(Some(close_frame)).await
+        self.inner.close(Some(close_frame)).await?;
+        Ok(())
     }
 }
 
 impl<'a> Stream for WebSocketFeed<'a> {
-    type Item = Result<serde_json::Value, Error>;
+    type Item = crate::error::Result<serde_json::Value>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         match Pin::new(&mut self.inner).poll_next(cx) {
             Poll::Ready(Some(val)) => {
                 let text = val?.into_text()?;
-                let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+                let value: serde_json::Value = serde_json::from_str(&text)?;
                 Poll::Ready(Some(Ok(value)))
             },
             Poll::Ready(None) => Poll::Ready(None),
@@ -182,18 +184,33 @@ impl<'a> Sink<Message> for WebSocketFeed<'a> {
     type Error = Error;
 
     fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        Pin::new(&mut self.inner).poll_ready(cx)
+        match Pin::new(&mut self.inner).poll_ready(cx) {
+            Poll::Ready(Ok(val)) => Poll::Ready(Ok(val)),
+            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Websocket, Some(val)))),
+            Poll::Pending => Poll::Pending
+        }
     }
 
     fn start_send(mut self: Pin<&mut Self>, item: Message) -> Result<(), Self::Error> {
-        Pin::new(&mut self.inner).start_send(item)
+        match Pin::new(&mut self.inner).start_send(item) {
+            Ok(val) => Ok(val),
+            Err(val) => Err(Error::new(Kind::Websocket, Some(val))),
+        }
     }
 
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        Pin::new(&mut self.inner).poll_flush(cx)
+        match Pin::new(&mut self.inner).poll_flush(cx) {
+            Poll::Ready(Ok(val)) => Poll::Ready(Ok(val)),
+            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Websocket, Some(val)))),
+            Poll::Pending => Poll::Pending
+        }
     }
        
     fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
-        Pin::new(&mut self.inner).poll_close(cx)
+        match Pin::new(&mut self.inner).poll_close(cx) {
+            Poll::Ready(Ok(val)) => Poll::Ready(Ok(val)),
+            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Websocket, Some(val)))),
+            Poll::Pending => Poll::Pending
+        }
     }
 }
