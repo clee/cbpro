@@ -460,6 +460,7 @@ pub(super) fn apply_json<T: Serialize>(req: &mut Request, json: &T) -> crate::er
     Ok(())
 }
 
+/// Optional trait items depending on the impls of the given generic type T
 pub struct QueryBuilder<'a, T: Params<'a>> {
     client: Client,
     request: Request,

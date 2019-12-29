@@ -94,3 +94,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## FIX API
 by request
+
+## License
+
+Licensed under
+
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
