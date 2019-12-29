@@ -1,4 +1,4 @@
-# Coinbase pro client for Rust
+# Library Client for Coinbase Pro
 Supports latest Future and Stream traits
 
 ## Features
