@@ -12,6 +12,7 @@ pub(super) enum Kind {
     Other
 }
 
+/// The Errors that may occur when sending a request.
 pub struct Error {
     kind: Kind,
     source: Option<BoxError>
@@ -117,6 +118,7 @@ impl From<hmac::crypto_mac::InvalidKeyLength> for Error {
     }
 }
 
+/// Coinbase specific error types.
 #[derive(Debug)]
 pub struct CBError {
     code: u16,
