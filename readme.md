@@ -9,7 +9,10 @@ Supports latest Future and Stream traits
 Cargo.toml:
 ```toml
 [dependencies]
-cbpro = "0.1.0"
+cbpro = "0.2.1"
+tokio = "0.2.0-alpha.6"
+serde_json = "1.0.44"
+futures = "0.3.1"
 ```
 
 ### Async Client
