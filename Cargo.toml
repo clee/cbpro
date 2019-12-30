@@ -1,13 +1,13 @@
 [package]
 name = "cbpro"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["kgeronim <kevin.geronimo@outlook.com>"]
 edition = "2018"
 description = "Client library for Coinbase Pro"
 documentation = "https://docs.rs/cbpro"
 repository = "https://github.com/kgeronim/cbpro"
 keywords = ["coinbase", "gdax", "crypto", "exchange", "trade"]
-categories = ["api-bindings", "Cryptocurrencies"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
 readme = "README.md"
 license = "MIT"
 

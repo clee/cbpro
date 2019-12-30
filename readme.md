@@ -28,14 +28,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Async Pagination
 ```rust
 use cbpro::client::{PublicClient, SANDBOX_URL};
-use futures::stream::TryStreamExt;
+use futures::TryStreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = PublicClient::new(SANDBOX_URL);
-    let mut stream = client.get_trades("BTC-USD").paginate()?;
+    let mut pages = client.get_trades("BTC-USD").paginate()?;
 
-    while let Some(json) = stream.try_next().await? {
+    while let Some(json) = pages.try_next().await? {
         println!("{}", serde_json::to_string_pretty(&json).unwrap());
         tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
     }
@@ -45,12 +45,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Async Websocket
 ```rust
-use cbpro::websocket::{Channels, WebSocketFeed, WEBSOCKET_FEED_URL};
+use cbpro::websocket::{Channels, WebSocketFeed, SANDBOX_FEED_URL};
 use futures::TryStreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut feed = WebSocketFeed::connect(WEBSOCKET_FEED_URL).await?;
+    let mut feed = WebSocketFeed::connect(SANDBOX_FEED_URL).await?;
     feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
 
     while let Some(value) = feed.try_next().await? {

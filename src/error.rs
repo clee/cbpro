@@ -1,6 +1,7 @@
 use std::fmt;
 use std::error;
 
+/// Alias for general errors
 pub type Result<T> = std::result::Result<T, Error>;
 pub(crate) type BoxError = Box<dyn error::Error + Send + Sync>;
 

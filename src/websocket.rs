@@ -5,26 +5,32 @@ use futures::{
     stream::Stream,
     task::{Context, Poll},
 };
-use async_tungstenite::{WebSocketStream, MaybeTlsStream};
-use async_tungstenite::tungstenite::{
-    Message, protocol::{
-        CloseFrame, 
-        frame::coding::CloseCode
+use async_tungstenite::{
+    WebSocketStream, 
+    MaybeTlsStream,
+    connect_async,
+    tungstenite::{
+        Message, protocol::{
+            CloseFrame, 
+            frame::coding::CloseCode
+        }
     }
 };
 use async_std::net::TcpStream;
-use async_tungstenite::connect_async;
 use serde::Serialize;
-
 use std::collections::HashMap;
 use chrono::Utc;
-use hmac::{Hmac, Mac};
+use hmac::{ Hmac, Mac };
 use sha2::Sha256;
 use crate::client::Auth;
-use crate::error::{Error, Kind};
+use crate::error::{ Error, Kind };
 
+/// wss://ws-feed-public.sandbox.pro.coinbase.com
 pub const SANDBOX_FEED_URL: &'static str = "wss://ws-feed-public.sandbox.pro.coinbase.com";
+/// wss://ws-feed.pro.coinbase.com
+pub const WEBSOCKET_FEED_URL: &'static str = "wss://ws-feed.pro.coinbase.com";
 
+/// Channel constants
 pub struct Channels;
 
 impl Channels {
@@ -50,6 +56,7 @@ struct SubscribeMessage<'a> {
 
 type HmacSha256 = Hmac<Sha256>;
 
+/// Stream with private or public access to Coinbase's Websocket Feed
 pub struct WebSocketFeed<'a> {
     inner: WebSocketStream<MaybeTlsStream<TcpStream>>,
     auth: Option<Auth<'a>>
@@ -59,12 +66,12 @@ impl<'a> WebSocketFeed<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::websocket::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
+    /// use cbpro::websocket::{WebSocketFeed, SANDBOX_FEED_URL, Channels};
     /// use futures::TryStreamExt;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut feed = WebSocketFeed::connect(WEBSOCKET_FEED_URL).await?;
+    /// let mut feed = WebSocketFeed::connect(SANDBOX_FEED_URL).await?;
     /// feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
     ///
     /// while let Some(value) = feed.try_next().await? {
@@ -87,12 +94,12 @@ impl<'a> WebSocketFeed<'a> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::websocket::{WebSocketFeed, WEBSOCKET_FEED_URL, Channels};
+    /// use cbpro::websocket::{WebSocketFeed, SANDBOX_FEED_URL, Channels};
     /// use futures::TryStreamExt;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut feed = WebSocketFeed::connect_auth("key", "pass", "secret", WEBSOCKET_FEED_URL).await?;
+    /// let mut feed = WebSocketFeed::connect_auth("key", "pass", "secret", SANDBOX_FEED_URL).await?;
     /// feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
     ///
     /// while let Some(value) = feed.try_next().await? {

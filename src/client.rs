@@ -2,34 +2,38 @@ use reqwest::{ Client, Url };
 use chrono::{offset::TimeZone, DateTime};
 use crate::builder::*;
 
+/// https://api-public.sandbox.pro.coinbase.com
 pub const SANDBOX_URL: &str = "https://api-public.sandbox.pro.coinbase.com";
+/// https://api.pro.coinbase.com
+pub const MAIN_URL: &str = "https://api.pro.coinbase.com";
 
+/// ID variants for orders
 pub enum ORD<'a> {
     OrderID(&'a str),
     ClientOID(&'a str)
 }
-
+/// ID variants for fills
 pub enum FILL<'a> {
     OrderID(&'a str),
     ProductID(&'a str)
 }
-
+/// Deposits variants
 pub enum DEP<'a> {
     CBAccountID(&'a str),
     PYMTMethodID(&'a str)
 }
-
+/// Withdrawal variants
 pub enum WDL<'a> {
     CBAccountID(&'a str),
     PYMTMethodID(&'a str),
     Crypto { addr: &'a str, tag: Option<&'a str> }
 }
-
+/// Report variants
 pub enum RPT<'a> {
     Fills { product_id: &'a str },
     Account { account_id: &'a str }
 }
-                                                                                                                                                                                                                                                                                    
+/// Quantity variants for market orders                                                                                                                                                                                                                                                              
 pub enum QTY {
     Size(f64),
     Funds(f64)
@@ -42,12 +46,14 @@ pub(super) struct Auth<'a> {
     pub secret: &'a str,
 }
 
+/// Private endpoints
 pub struct AuthenticatedClient<'a> {
     auth: Auth<'a>,
     public: PublicClient,
 }
 
 impl<'a> AuthenticatedClient<'a> {
+    /// Create new instance
     pub fn new(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> Self {
         Self {
             auth: Auth { key, pass, secret },
@@ -62,10 +68,11 @@ impl<'a> AuthenticatedClient<'a> {
     fn url(&self) -> &Url {
         &self.public.url
     }
-
+    /// Get public client
     pub fn public(&self) -> &PublicClient {
         &self.public
     }
+    /// Get a list of trading accounts from the profile of the API key.
     /// # Example
     ///
     /// ```no_run
@@ -88,6 +95,9 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Information for a single account. 
+    /// Use this endpoint when you know the account_id. 
+    /// API key must belong to the same profile as the account.
     /// # Example
     ///
     /// ```no_run
@@ -111,6 +121,9 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// List account activity of the API key’s profile. 
+    /// Account activity either increases or decreases your account balance. 
+    /// Items are paginated and sorted latest first.
     /// # Example
     ///
     /// ```no_run
@@ -134,6 +147,10 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// List holds of an account that belong to the same profile as the API key. 
+    /// Holds are placed on an account for any active orders or pending withdraw requests. 
+    /// As an order is filled, the hold amount is updated. If an order is canceled, any remaining hold is removed. 
+    /// For a withdraw, once it is completed, the hold is removed.
     /// # Example
     ///
     /// ```no_run
@@ -157,6 +174,9 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Orders can only be placed if your account has sufficient funds. 
+    /// Once an order is placed, your account funds will be put on hold for the duration of the order. 
+    /// How much and which funds are put on hold depends on the order type and parameters specified.
     /// # Example
     ///
     /// ```no_run
@@ -186,6 +206,9 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Orders can only be placed if your account has sufficient funds. 
+    /// Once an order is placed, your account funds will be put on hold for the duration of the order. 
+    /// How much and which funds are put on hold depends on the order type and parameters specified.
     /// # Example
     ///
     /// ```no_run
@@ -218,6 +241,11 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Cancel a previously placed order. 
+    /// Order must belong to the profile that the API key belongs to.
+    ///
+    /// If the order had no matches during its lifetime its record may be purged. 
+    /// This means the order details will not be available with GET /orders/<id>.
     /// # Example
     ///
     /// ```no_run
@@ -244,6 +272,8 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// With best effort, cancel all open orders from the profile that the API key belongs to. 
+    /// The response is a list of ids of the canceled orders.
     /// # Example
     ///
     /// ```no_run
@@ -266,6 +296,9 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// List your current open orders from the profile that the API key belongs to. 
+    /// Only open or un-settled orders are returned. 
+    /// As soon as an order is no longer open and settled, it will no longer appear in the default request.
     /// # Example
     ///
     /// ```no_run
@@ -289,6 +322,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Get a single order by order id from the profile that the API key belongs to.
     /// # Example
     ///
     /// ```no_run
@@ -315,6 +349,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Get a list of recent fills of the API key’s profile.
     /// # Example
     ///
     /// ```no_run
@@ -344,6 +379,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Deposit funds from a payment method.
     /// # Example
     ///
     /// ```no_run
@@ -381,6 +417,9 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Deposit funds from a coinbase account. 
+    /// You can move funds between your Coinbase accounts and your Coinbase Pro trading accounts within your daily limits. 
+    /// Moving funds between Coinbase and Coinbase Pro is instant and free.
     /// # Example
     ///
     /// ```no_run
@@ -429,6 +468,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Convert $10,000.00 to 10,000.00 USDC.
     /// # Example
     ///
     /// ```no_run
@@ -456,6 +496,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Get a list of your payment methods.
     /// # Example
     ///
     /// ```no_run
@@ -478,6 +519,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Get a list of your coinbase accounts.
     /// # Example
     ///
     /// ```no_run
@@ -500,6 +542,8 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// This request will return your current maker & taker fee rates, as well as your 30-day trailing volume. 
+    /// Quoted rates are subject to change.
     /// # Example
     ///
     /// ```no_run
@@ -522,6 +566,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Reports provide batches of historic information about your profile in various human and machine readable forms.
     /// # Example
     ///
     /// ```no_run
@@ -566,6 +611,9 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Once a report request has been accepted for processing, the status is available by polling the report resource endpoint.
+    ///
+    /// The final report will be uploaded and available at file_url once the status indicates ready
     /// # Example
     ///
     /// ```no_run
@@ -589,6 +637,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// List your profiles.
     /// # Example
     ///
     /// ```no_run
@@ -611,6 +660,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Get a single profile by profile id.
     /// # Example
     ///
     /// ```no_run
@@ -634,6 +684,7 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// Transfer funds from API key’s profile to another user owned profile.
     /// # Example
     ///
     /// ```no_run
@@ -662,6 +713,10 @@ impl<'a> AuthenticatedClient<'a> {
             Some(self.auth),
         )
     }
+    /// This endpoint requires either the “view” or “trade” permission.
+    ///
+    /// This request will return your 30-day trailing volume for all products of the API key’s profile. 
+    /// This is a cached value that’s calculated every day at midnight UTC.
     /// # Example
     ///
     /// ```no_run
@@ -686,18 +741,21 @@ impl<'a> AuthenticatedClient<'a> {
     }
 }
 
+/// Public endpoints
 pub struct PublicClient {
     client: Client,
     url: Url,
 }
 
 impl PublicClient {
+    /// Create new instance
     pub fn new(url: &str) -> Self {
         Self {
             client: Client::new(),
             url: Url::parse(url).expect("Invalid Url"),
         }
     }
+    /// Get a list of available currency pairs for trading.
     /// # Example
     ///
     /// ```no_run
@@ -720,6 +778,8 @@ impl PublicClient {
             None,
         )
     }
+    /// Get a list of open orders for a product. 
+    /// The amount of detail shown can be customized with the level parameter.
     /// # Example
     ///
     /// ```no_run
@@ -743,6 +803,7 @@ impl PublicClient {
             None,
         )
     }
+    /// Snapshot information about the last trade (tick), best bid/ask and 24h volume.
     /// # Example
     ///
     /// ```no_run
@@ -766,21 +827,18 @@ impl PublicClient {
             None,
         )
     }
+    /// List the latest trades for a product.
     /// # Example
     ///
     /// ```no_run
     /// use cbpro::client::{PublicClient, SANDBOX_URL};
-    /// use futures::stream::TryStreamExt;
+    /// use futures::TryStreamExt;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = PublicClient::new(SANDBOX_URL);
-    /// let mut stream = client.get_trades("BTC-USD").paginate()?;
-    ///
-    /// while let Some(json) = stream.try_next().await? {
-    ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
-    ///     tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
-    /// }
+    /// let mut trades = client.get_trades("BTC-USD").json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&trades).unwrap());
     /// # Ok(())
     /// # }
     /// ```
@@ -794,6 +852,8 @@ impl PublicClient {
             None,
         )
     }
+    /// Historic rates for a product. 
+    /// Rates are returned in grouped buckets based on requested granularity.
     /// # Example
     ///
     /// ```no_run
@@ -802,10 +862,7 @@ impl PublicClient {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = PublicClient::new(SANDBOX_URL);
-    /// let end = chrono::offset::Utc::now();
-    /// let start = end - chrono::Duration::hours(5);
-    ///
-    /// let rates = client.get_historic_rates("BTC-USD", 3600).range(start, end).json().await?;
+    /// let rates = client.get_historic_rates("BTC-USD", 3600).json().await?;
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
     /// # Ok(())
     /// # }
@@ -823,6 +880,8 @@ impl PublicClient {
             None,
         )
     }
+    /// Get 24 hr stats for the product. 
+    /// volume is in base currency units. open, high, low are in quote currency units.
     /// # Example
     ///
     /// ```no_run
@@ -846,6 +905,7 @@ impl PublicClient {
             None,
         )
     }
+    /// List known currencies.
     /// # Example
     ///
     /// ```no_run
@@ -868,6 +928,7 @@ impl PublicClient {
             None,
         )
     }
+    /// Get the API server time.
     /// # Example
     ///
     /// ```no_run

@@ -5,9 +5,11 @@ use futures::{
     task::{Context, Poll},
 };
 use reqwest::{Response, Client, Request};
-use crate::builder::{Paginate, apply_query, Params};
+use crate::{
+    builder::{ Paginate, apply_query, Params },
+    error::{ Error, CBError, Kind }
+};
 use serde_json::Value;
-use crate::error::{Error, CBError, Kind};
 
 enum State {
     Start,
@@ -15,6 +17,7 @@ enum State {
 }
 
 type ResponseFuture = BoxFuture<'static, Result<Response, reqwest::Error>>;
+/// Alias representing a stream of json pages
 pub type Pages<'a> = BoxStream<'a, crate::error::Result<Value>>;
 
 pub(super) struct Paginated<T> {
