@@ -2,13 +2,14 @@
 //!
 //! ## cbpro
 //!
-//! This crate provides an easy to use API interface for interacting with [https://docs.pro.coinbase.com](https://docs.pro.coinbase.com).
-//! For private endpoints to Coinbase Pro use [AuthenticatedClient](client/struct.AuthenticatedClient.html). For public endpoints use [PublicClient](client/struct.PublicClient.html) or [AuthenticatedClient::public](client/struct.AuthenticatedClient.html#method.public).
+//! This crate provides an easy to use Coinbase Pro binding interface.
+//! For private endpoints use [AuthenticatedClient](client/struct.AuthenticatedClient.html). For public endpoints use [PublicClient](client/struct.PublicClient.html) or [AuthenticatedClient::public](client/struct.AuthenticatedClient.html#method.public).
 //! All methods beloging to the public or private client will return [QueryBuilder<'a, T>](builder/struct.QueryBuilder.html) which has split implementations per T. 
 //! The final result of any operation be it methods from client or websocket-feed will resolve to [serde_json::Value](https://docs.serde.rs/serde_json/enum.Value.html).
 //!
 //! The public feed endpoint is also available via [WebSocketFeed::connect](websocket/struct.WebSocketFeed.html#method.connect) or the private endpoint at [WebSocketFeed::connect_auth](websocket/struct.WebSocketFeed.html#method.connect_auth).
 //!
+//! For more details on Coinbase Pro go to: [https://docs.pro.coinbase.com](https://docs.pro.coinbase.com).
 //!
 //! ## Examples
 //!
