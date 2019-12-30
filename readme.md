@@ -9,7 +9,7 @@ Supports latest Future and Stream traits
 Cargo.toml:
 ```toml
 [dependencies]
-cbpro = "0.2.1"
+cbpro = "0.2.2"
 tokio = "0.2.0-alpha.6"
 tokio-timer = "0.3.0-alpha.5"
 serde_json = "1.0.44"
