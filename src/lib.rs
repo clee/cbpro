@@ -37,7 +37,7 @@
 //!
 //!     while let Some(json) = pages.try_next().await? {
 //!         println!("{}", serde_json::to_string_pretty(&json).unwrap());
-//!         tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
+//!         tokio::time::delay_for(core::time::Duration::new(1, 0)).await;
 //!     }
 //!     Ok(())
 //! }

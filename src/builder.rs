@@ -539,6 +539,7 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
             request.headers_mut().insert("CB-ACCESS-SIGN", (&b64_signature[..]).parse().unwrap());
         }
 
+        request.headers_mut().insert("User-Agent", "cbpro".parse().unwrap());
         Ok(request)
     }
     /// General terminal method
@@ -614,7 +615,7 @@ impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<'a, T> {
 ///
 /// while let Some(json) = pages.try_next().await? {
 ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
-///     tokio_timer::delay_for(core::time::Duration::new(1, 0)).await;
+///     tokio::time::delay_for(core::time::Duration::new(1, 0)).await;
 /// }
 /// # Ok(())
 /// # }

@@ -1,6 +1,6 @@
 [package]
 name = "cbpro"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["kgeronim <kevin.geronimo@outlook.com>"]
 edition = "2018"
 description = "Client library for Coinbase Pro"
@@ -31,5 +31,4 @@ default-features = false
 features = ["std"]
 
 [dev-dependencies]
-tokio-timer = "0.3.0-alpha.5"
-tokio = { version = "0.2.6", features = ["macros"] }
+tokio = { version = "0.2.6", features = ["macros", "time"] }
