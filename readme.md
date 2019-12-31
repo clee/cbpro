@@ -1,19 +1,11 @@
 # Library Client for Coinbase Pro
-Supports latest Future and Stream traits
-
-## Features
-- fully async private and public API
-- async websocket-feed support
+Async only support
 
 ## Examples
 Cargo.toml:
 ```toml
 [dependencies]
-cbpro = "0.2.2"
-tokio = "0.2.0-alpha.6"
-tokio-timer = "0.3.0-alpha.5"
-serde_json = "1.0.44"
-futures = "0.3.1"
+cbpro = "0.3.0"
 ```
 
 ### Async Client
@@ -64,15 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Api supported:
-- [ ] SYNC
-- [x] ASYNC
-- [x] Websocket-Feed
-
-## API
-- [x] Requests
-- [x] Pagination
-- [x] Types
+## Endpoints
 - [x] Private
   - [x] Authentication
   - [x] Accounts

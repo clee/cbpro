@@ -65,7 +65,7 @@ pub mod client;
 /// All possible errors
 pub mod error;
 mod paging;
-/// Public and Private websocket feed
+/// Public and private websocket feed
 pub mod websocket;
 
 pub use self::client::{AuthenticatedClient, PublicClient};

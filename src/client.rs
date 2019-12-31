@@ -9,33 +9,51 @@ pub const MAIN_URL: &str = "https://api.pro.coinbase.com";
 
 /// ID variants for orders
 pub enum ORD<'a> {
+    /// order_id param
     OrderID(&'a str),
+    /// client_oid param
     ClientOID(&'a str)
 }
 /// ID variants for fills
 pub enum FILL<'a> {
+    /// order_id param
     OrderID(&'a str),
+    /// product_id param
     ProductID(&'a str)
 }
 /// Deposits variants
 pub enum DEP<'a> {
+    /// coinbase_account_id param
     CBAccountID(&'a str),
+    /// payment_method_id param
     PYMTMethodID(&'a str)
 }
 /// Withdrawal variants
 pub enum WDL<'a> {
+    /// coinbase_account_id param
     CBAccountID(&'a str),
+    /// payment_method_id param
     PYMTMethodID(&'a str),
-    Crypto { addr: &'a str, tag: Option<&'a str> }
+    /// crypto withdrawal params
+    Crypto { 
+        /// A crypto address of the recipient
+        addr: &'a str, 
+        /// A destination tag for currencies that support one
+        tag: Option<&'a str> 
+    }
 }
 /// Report variants
 pub enum RPT<'a> {
+    /// product_id param to generate product_id
     Fills { product_id: &'a str },
+    /// account_id param to generate product_id
     Account { account_id: &'a str }
 }
 /// Quantity variants for market orders                                                                                                                                                                                                                                                              
 pub enum QTY {
+    /// Quantity to buy or sell
     Size(f64),
+    /// Quantity to use for buying or selling
     Funds(f64)
 }
 
@@ -46,7 +64,7 @@ pub(super) struct Auth<'a> {
     pub secret: &'a str,
 }
 
-/// Private endpoints
+/// Private client
 pub struct AuthenticatedClient<'a> {
     auth: Auth<'a>,
     public: PublicClient,
@@ -741,7 +759,7 @@ impl<'a> AuthenticatedClient<'a> {
     }
 }
 
-/// Public endpoints
+/// Public client
 pub struct PublicClient {
     client: Client,
     url: Url,

@@ -1,6 +1,6 @@
 [package]
 name = "cbpro"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["kgeronim <kevin.geronimo@outlook.com>"]
 edition = "2018"
 description = "Client library for Coinbase Pro"
@@ -13,7 +13,7 @@ license = "MIT"
 
 [dependencies]
 serde_json = "1.0.44"
-reqwest = { version = "0.10.0-alpha.2", features = ["json"] }
+reqwest = { version = "0.10.0", features = ["json"] }
 futures = "0.3.1"
 chrono = "0.4.10"
 serde = { version = "1.0.104", features = ["derive"] }
@@ -32,4 +32,4 @@ features = ["std"]
 
 [dev-dependencies]
 tokio-timer = "0.3.0-alpha.5"
-tokio = { version = "0.2.0-alpha.6", features = ["macros"] }
+tokio = { version = "0.2.6", features = ["macros"] }
