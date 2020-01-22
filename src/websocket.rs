@@ -7,16 +7,23 @@ use futures::{
 };
 use async_tungstenite::{
     WebSocketStream, 
-    MaybeTlsStream,
-    connect_async,
+    tokio::{
+        connect_async,
+        TokioAdapter
+    },
     tungstenite::{
-        Message, protocol::{
+        Message, 
+        protocol::{
             CloseFrame, 
-            frame::coding::CloseCode
-        }
-    }
+            frame::coding::CloseCode,
+        },
+        handshake::client::Response
+    },
+    stream::Stream as StreamSwitcher
 };
-use async_std::net::TcpStream;
+
+use tokio::net::TcpStream;
+use tokio_tls::TlsStream;
 use serde::Serialize;
 use std::collections::HashMap;
 use chrono::Utc;
@@ -28,7 +35,7 @@ use crate::error::{ Error, Kind };
 /// wss://ws-feed-public.sandbox.pro.coinbase.com
 pub const SANDBOX_FEED_URL: &'static str = "wss://ws-feed-public.sandbox.pro.coinbase.com";
 /// wss://ws-feed.pro.coinbase.com
-pub const WEBSOCKET_FEED_URL: &'static str = "wss://ws-feed.pro.coinbase.com";
+pub const MAIN_FEED_URL: &'static str = "wss://ws-feed.pro.coinbase.com";
 
 /// Channel constants
 pub struct Channels;
@@ -58,7 +65,8 @@ type HmacSha256 = Hmac<Sha256>;
 
 /// Stream with private or public access to Coinbase's Websocket Feed
 pub struct WebSocketFeed<'a> {
-    inner: WebSocketStream<MaybeTlsStream<TcpStream>>,
+    inner: WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TokioAdapter<TokioAdapter<TcpStream>>>>>>,
+    response: Response,
     auth: Option<Auth<'a>>
 }
 
@@ -83,10 +91,11 @@ impl<'a> WebSocketFeed<'a> {
     pub async fn connect(url: &str) -> crate::error::Result<WebSocketFeed<'a>> {
     
         let url = url::Url::parse(url).unwrap();
-        let (ws_stream, _) = connect_async(url).await?;
+        let (ws_stream, res) = connect_async(url).await?;
 
         Ok(WebSocketFeed {
             inner: ws_stream,
+            response: res,
             auth: None
         })
         
@@ -111,15 +120,17 @@ impl<'a> WebSocketFeed<'a> {
     pub async fn connect_auth(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> crate::error::Result<WebSocketFeed<'a>> {
     
         let url = url::Url::parse(url).unwrap();
-        let (ws_stream, _) = connect_async(url).await?;
+        let (ws_stream, res) = connect_async(url).await?;
 
         Ok(WebSocketFeed {
             inner: ws_stream,
+            response: res,
             auth: Some(Auth { key, pass, secret })
         })
         
     }
 
+    /// Subscribe to a list of channels and products.
     pub async fn subscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> crate::error::Result<()> {
         let auth = match self.auth {
             Some(auth) => {
@@ -149,6 +160,7 @@ impl<'a> WebSocketFeed<'a> {
         Ok(())
     }
 
+    /// Unsubscribe to a list of channels and products.
     pub async fn unsubscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> crate::error::Result<()> {
         let message = SubscribeMessage {type_: "unsubscribe", product_ids, channels, auth: None};
         let message = serde_json::to_string(&message).unwrap();
@@ -156,14 +168,22 @@ impl<'a> WebSocketFeed<'a> {
         Ok(())
     }
 
-    pub fn get_ref(&self) -> &WebSocketStream<MaybeTlsStream<TcpStream>> {
+    /// Returns a shared reference to the inner stream.
+    pub fn get_ref(&self) -> &WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TokioAdapter<TokioAdapter<TcpStream>>>>>> {
         &self.inner
     }
 
-    pub fn get_mut(&mut self) -> &mut WebSocketStream<MaybeTlsStream<TcpStream>> {
+    /// Returns a mutable reference to the inner stream.
+    pub fn get_mut(&mut self) -> &mut WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TokioAdapter<TokioAdapter<TcpStream>>>>>> {
         &mut self.inner
     }
 
+    /// Returns a shared reference to the feed response.
+    pub fn response(&self) -> &Response {
+        &self.response
+    }
+
+    /// Sends a close frame
     pub async fn close(mut self) -> crate::error::Result<()> {
         let close_frame = CloseFrame {code: CloseCode::Normal, reason: "closed manually".to_string().into()};
         self.inner.close(Some(close_frame)).await?;

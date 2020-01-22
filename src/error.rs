@@ -1,7 +1,7 @@
 use std::fmt;
 use std::error;
 
-/// Alias for general errors
+/// Alias for cbpro errors
 pub type Result<T> = std::result::Result<T, Error>;
 pub(crate) type BoxError = Box<dyn error::Error + Send + Sync>;
 
@@ -13,7 +13,7 @@ pub(super) enum Kind {
     Other
 }
 
-/// The Errors that may occur when sending a request.
+/// General error type.
 pub struct Error {
     kind: Kind,
     source: Option<BoxError>
@@ -48,10 +48,10 @@ impl fmt::Debug for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let err_msg = match self.kind {
-            Kind::Client => "Client error",
-            Kind::Websocket => "Websocket error",
-            Kind::Coinbase => "Coinbase error",
-            _ => "Sorry, something is wrong! Please Try Again!",
+            Kind::Client => "Invalid inputs provided",
+            Kind::Websocket => "Websocket dropped connection",
+            Kind::Coinbase => "Wrong inputs sent to the coinbase server",
+            _ => "World is ending!",
         };
 
         write!(f, "{}", err_msg)
@@ -134,7 +134,8 @@ impl CBError {
 
 impl fmt::Display for CBError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Status Code: {}, Reason: {}", self.code, self.message)
+        let message: serde_json::Value = serde_json::from_str(&self.message).unwrap();
+        write!(f, "Status Code: {}, Reason: {}", self.code, serde_json::to_string(&message).unwrap())
     }
 }
 

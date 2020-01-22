@@ -542,6 +542,7 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
         request.headers_mut().insert("User-Agent", "cbpro".parse().unwrap());
         Ok(request)
     }
+    
     /// General terminal method
     pub async fn json(self) -> crate::error::Result<Value> {
         let resp = self.client.execute(self.auth_request()?).await?;
@@ -553,85 +554,91 @@ impl<'a, T: Params<'a>> QueryBuilder<'a, T> {
         }   
     }
 }
-/// # Example
-///
-/// ```no_run
-/// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
-///
-/// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-/// let response = client.cancel_all()
-///     .product_id("BTC-USD")
-///     .json()
-///     .await?;
-/// println!("{}", serde_json::to_string_pretty(&response).unwrap());
-/// # Ok(())
-/// # }
-/// ```
+
 impl<'a, T: Params<'a> + ProductID<'a>> QueryBuilder<'a, T> {
-    /// Sets product_id param as part of the url query before sending it to the coinbase servers
+    /// Sets product id
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client.cancel_all()
+    ///     .product_id("BTC-USD")
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn product_id(mut self, value: &'a str) -> Self {
         self.query.set_product_id(value);
         self
     }
 }
-/// # Example
-///
-/// ```no_run
-/// use cbpro::client::{PublicClient, SANDBOX_URL};
-///
-/// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let client = PublicClient::new(SANDBOX_URL);
-/// let order_book = client.get_product_order_book("BTC-USD")
-///     .level(3)
-///     .json()
-///     .await?;
-/// println!("{}", serde_json::to_string_pretty(&order_book).unwrap());
-/// # Ok(())
-/// # }
-/// ```
+
 impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<'a, T> {
-    /// Sets level param as part of the url query before sending it to the coinbase servers
+    /// Sets level for order book data. Max level is 3.
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let order_book = client.get_product_order_book("BTC-USD")
+    ///     .level(3)
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&order_book).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn level(mut self, value: i32) -> Self {
         self.query.set_level(value);
         self
     }
 }
-/// # Example
-///
-/// ```no_run
-/// use cbpro::client::{PublicClient, SANDBOX_URL};
-/// use futures::TryStreamExt;
-///
-/// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let client = PublicClient::new(SANDBOX_URL);
-/// let mut pages = client.get_trades("BTC-USD")
-///     .limit(10)
-///     .after(7102310) // after or before but not both
-///     .paginate()?; // or .json().await? for a single request
-///
-/// while let Some(json) = pages.try_next().await? {
-///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
-///     tokio::time::delay_for(core::time::Duration::new(1, 0)).await;
-/// }
-/// # Ok(())
-/// # }
-/// ```
+
 impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> {
-    /// Sets limit param as part of the url query before sending it to the coinbase servers
+    /// Sets limit for the ammount of pages each request will return. 
+    /// Max number of pages is 100.
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
+    /// use futures::TryStreamExt;
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let mut pages = client.get_trades("BTC-USD")
+    ///     .limit(10)
+    ///     .after(7102310) // after or before but not both
+    ///     .paginate()?; // or .json().await? for a single request
+    ///
+    /// while let Some(json) = pages.try_next().await? {
+    ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
+    ///     tokio::time::delay_for(core::time::Duration::new(1, 0)).await;
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn limit(mut self, value: i32) -> Self {
         self.query.set_limit(value);
         self
     }
-    /// Sets before param as part of the url query before sending it to the coinbase servers
+
+    /// Gets newer page from the trade id specified.
     pub fn before(mut self, value: i32) -> Self {
         self.query.set_before(value);
         self
     }
-    /// Sets after param as part of the url query before sending it to the coinbase servers
+
+    /// Gets older page from the trade id specified.
     pub fn after(mut self, value: i32) -> Self {
         self.query.set_after(value);
         self
@@ -642,24 +649,25 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<'a, T> {
         Ok(pages)
     }
 }
-/// # Example
-///
-/// ```no_run
-/// use cbpro::client::{PublicClient, SANDBOX_URL};
-///
-/// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let client = PublicClient::new(SANDBOX_URL);
-/// let end = chrono::offset::Utc::now();
-/// let start = end - chrono::Duration::hours(5);
-///
-/// let rates = client.get_historic_rates("BTC-USD", 3600).range(start, end).json().await?;
-/// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
-/// # Ok(())
-/// # }
-/// ```
 impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<'a, T> {
-    /// Sets start&end params as part of the url query before sending it to the coinbase servers
+    /// Sets start and end time for historic rates.
+    /// If the range results in more than 300 candles, the request will be rejected.
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{PublicClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = PublicClient::new(SANDBOX_URL);
+    /// let end = chrono::offset::Utc::now();
+    /// let start = end - chrono::Duration::hours(5);
+    ///
+    /// let rates = client.get_historic_rates("BTC-USD", 3600).range(start, end).json().await?;
+    /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn range<Tz: TimeZone>(mut self, start: DateTime<Tz>, end: DateTime<Tz>) -> Self 
     where
         Tz::Offset: core::fmt::Display,
@@ -669,6 +677,9 @@ impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<'a, T> {
         self
     }
 }
+
+impl<'a, T: Params<'a> + ClientOID<'a>> QueryBuilder<'a, T> {
+/// Sets uuid as part of this order
 /// # Example
 ///
 /// ```no_run
@@ -685,41 +696,53 @@ impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<'a, T> {
 /// # Ok(())
 /// # }
 /// ```
-impl<'a, T: Params<'a> + ClientOID<'a>> QueryBuilder<'a, T> {
-    /// Sets client_oid param as part of the url query before sending it to the coinbase servers
     pub fn client_oid(mut self, value: &'a str) -> Self {
         self.query.set_client_oid(value);
         self
     }
 }
-/// # Example
-///
-/// ```no_run
-/// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
-///
-/// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-/// let response = client.place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
-///     .stp("dc")
-///     .stop_price(7010.00)
-///     .time_in_force("GTT")
-///     .cancel_after("min")
-///     .post_only(true)
-///     .json()
-///     .await?;
-/// println!("{}", serde_json::to_string_pretty(&response).unwrap());
-/// # Ok(())
-/// # }
-/// ```
+
 impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<'a, T> {
-    /// Sets stp param as part of the url query before sending it to the coinbase servers
+    /// Sets Self-trade prevention flag.
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client
+    ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
+    ///     .stp("dc")
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn stp(mut self, value: &'a str) -> Self {
         self.query.set_stp(value);
         self
     }
-    /// Sets stop&stop_price params as part of the url query before sending it to the coinbase servers
-    /// Calling this method on a sell limit order will convert it into a stop loss or a stop entry for a buy limit order.
+    /// Turns sell limit order into a stop loss or a stop entry for a buy limit order.
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client
+    ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
+    ///     .stop_price(7010.00)
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn stop_price(mut self, value: f64) -> Self {
         self.query.set_stop_price(value);
         if let Some(value) = self.query.params().side {
@@ -731,55 +754,129 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<'a, T> {
         }
         self
     }
-    /// Sets time_in_force param as part of the url query before sending it to the coinbase servers
-    /// Valid inputs are "GTC", "GTT", "IOC", "FOK" (default is GTC)
+    /// Sets time in force policy. (default is GTC)
+    /// Valid inputs are: "GTC", "GTT", "IOC", "FOK". 
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client
+    ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
+    ///     .time_in_force("GTT")
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn time_in_force(mut self, value: &'a str) -> Self {
         self.query.set_time_in_force(value);
         self
     }
-    /// Sets cancel_after&time_in_force params as part of the url query before sending it to the coinbase servers
-    /// Valid inputs "min", "hour", "day"
+    /// Sets time before order is cancelled
+    /// Valid inputs are: "min", "hour", "day".
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client
+    ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
+    ///     .cancel_after("min")
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn cancel_after(mut self, value: &'a str) -> Self {
         self.query.set_cancel_after(value);
         self.query.set_time_in_force("GTT");
         self
     }
-    /// Sets post_only param as part of the url query before sending it to the coinbase servers
-    /// Invalid when time_in_force is IOC or FOK
+    /// The post-only flag indicates that the order should only make liquidity. 
+    /// If any part of the order results in taking liquidity, the order will be rejected and no part of it will execute.
+    /// Invalid when time_in_force is IOC or FOK.
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let response = client
+    ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
+    ///     .post_only(true)
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn post_only(mut self, value: bool) -> Self {
         self.query.set_post_only(value);
         self
     }
 }
-/// # Example
-///
-/// ```no_run
-/// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
-/// use chrono::{ TimeZone, Utc };
-///
-/// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-/// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
-/// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
-///
-/// let rates = client.create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" })
-///     .format("pdf")
-///     .email("<email>")
-///     .json()
-///     .await?;
-/// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
-/// # Ok(())
-/// # }
-/// ```
 impl<'a, T: Params<'a> + Report<'a>> QueryBuilder<'a, T> {
-    /// Sets format param as part of the url query before sending it to the coinbase servers
+    /// Sets format of output report.
     /// Valid inputs are "pdf" or "csv" (defualt is pdf)
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
+    /// use chrono::{ TimeZone, Utc };
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
+    /// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
+    ///
+    /// let rates = client.create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" })
+    ///     .format("pdf")
+    ///     .email("<email>")
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn format(mut self, value: &'a str) -> Self {
         self.query.set_format(value);
         self
     }
-    /// Sets email param as part of the url query before sending it to the coinbase servers
+    /// Sets to send report to.
+    /// Valid inputs are "pdf" or "csv" (defualt is pdf)
+    /// # Example
+    ///
+    /// ```no_run
+    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
+    /// use chrono::{ TimeZone, Utc };
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
+    /// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
+    /// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
+    ///
+    /// let rates = client
+    ///     .create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" })
+    ///     .email("<email>")
+    ///     .json()
+    ///     .await?;
+    /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn email(mut self, value: &'a str) -> Self {
         self.query.set_email(value);
         self

@@ -203,7 +203,11 @@ impl<'a> AuthenticatedClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-    /// let response = client.place_limit_order("BTC-USD", "buy", 7000.00, 10.00).json().await?;
+    /// let response = client
+    ///     .place_limit_order("BTC-USD", "buy", 7000.00, 10.00)
+    ///     .json()
+    ///     .await?;
+    /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
     /// # Ok(())
     /// # }
@@ -235,7 +239,11 @@ impl<'a> AuthenticatedClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-    /// let response = client.place_market_order("BTC-USD", "buy", QTY::Size(10.00)).json().await?;
+    /// let response = client
+    ///     .place_market_order("BTC-USD", "buy", QTY::Size(10.00))
+    ///     .json()
+    ///     .await?;
+    /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
     /// # Ok(())
     /// # }
@@ -406,7 +414,11 @@ impl<'a> AuthenticatedClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-    /// let response = client.deposit(10.00, "BTC", DEP::CBAccountID("<account_id>")).json().await?;
+    /// let response = client
+    ///     .deposit(10.00, "BTC", DEP::CBAccountID("<account_id>"))
+    ///     .json()
+    ///     .await?;
+    /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
     /// # Ok(())
     /// # }
@@ -446,7 +458,11 @@ impl<'a> AuthenticatedClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-    /// let response = client.withdraw(10.00, "BTC", WDL::CBAccountID("<account_id>")).json().await?;
+    /// let response = client
+    ///     .withdraw(10.00, "BTC", WDL::CBAccountID("<account_id>"))
+    ///     .json()
+    ///     .await?;
+    /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
     /// # Ok(())
     /// # }
@@ -597,7 +613,11 @@ impl<'a> AuthenticatedClient<'a> {
     /// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
     /// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
     ///
-    /// let rates = client.create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" }).json().await?;
+    /// let rates = client
+    ///     .create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" })
+    ///     .json()
+    ///     .await?;
+    /// 
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
     /// # Ok(())
     /// # }
@@ -711,7 +731,10 @@ impl<'a> AuthenticatedClient<'a> {
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = AuthenticatedClient::new("key", "pass", "secret", SANDBOX_URL);
-    /// let response = client.transfer_profile("<from_profile_id>", "<to_profile_id>", "BTC-USD", 10.00).json().await?;
+    /// let response = client
+    ///     .transfer_profile("<from_profile_id>", "<to_profile_id>", "BTC-USD", 10.00)
+    ///     .json()
+    ///     .await?;
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
     /// # Ok(())
     /// # }

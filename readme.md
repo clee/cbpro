@@ -1,11 +1,16 @@
 # Library Client for Coinbase Pro
 Async only support
 
-## Examples
-Cargo.toml:
+[Documentation](https://docs.rs/cbpro)
+
+## Usage
+Add this in your `Cargo.toml`:
 ```toml
 [dependencies]
-cbpro = "0.4.0"
+cbpro = "0.5.0"
+futures = "0.3.1"
+serde_json = "1.0.44"
+tokio = { version = "0.2.10", features = ["macros", "time"] }
 ```
 
 ### Async Client
