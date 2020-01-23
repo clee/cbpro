@@ -64,13 +64,13 @@ struct SubscribeMessage<'a> {
 type HmacSha256 = Hmac<Sha256>;
 
 /// Stream with private or public access to Coinbase's Websocket Feed
-pub struct WebSocketFeed<'a> {
+pub struct WebSocketFeed {
     inner: WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TokioAdapter<TokioAdapter<TcpStream>>>>>>,
     response: Response,
-    auth: Option<Auth<'a>>
+    auth: Option<Auth>
 }
 
-impl<'a> WebSocketFeed<'a> {
+impl WebSocketFeed {
     /// # Example
     ///
     /// ```no_run
@@ -88,7 +88,7 @@ impl<'a> WebSocketFeed<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect(url: &str) -> crate::error::Result<WebSocketFeed<'a>> {
+    pub async fn connect(url: &str) -> crate::error::Result<WebSocketFeed> {
     
         let url = url::Url::parse(url).unwrap();
         let (ws_stream, res) = connect_async(url).await?;
@@ -108,7 +108,7 @@ impl<'a> WebSocketFeed<'a> {
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut feed = WebSocketFeed::connect_auth("key", "pass", "secret", SANDBOX_FEED_URL).await?;
+    /// let mut feed = WebSocketFeed::connect_auth(String::new(), String::new(), String::new(), SANDBOX_FEED_URL).await?;
     /// feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
     ///
     /// while let Some(value) = feed.try_next().await? {
@@ -117,7 +117,7 @@ impl<'a> WebSocketFeed<'a> {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect_auth(key: &'a str, pass: &'a str, secret: &'a str, url: &str) -> crate::error::Result<WebSocketFeed<'a>> {
+    pub async fn connect_auth(key: String, pass: String, secret: String, url: &str) -> crate::error::Result<WebSocketFeed> {
     
         let url = url::Url::parse(url).unwrap();
         let (ws_stream, res) = connect_async(url).await?;
@@ -131,13 +131,13 @@ impl<'a> WebSocketFeed<'a> {
     }
 
     /// Subscribe to a list of channels and products.
-    pub async fn subscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> crate::error::Result<()> {
+    pub async fn subscribe(&mut self, product_ids: &[&str], channels: &[&str]) -> crate::error::Result<()> {
         let auth = match self.auth {
-            Some(auth) => {
+            Some(ref auth) => {
                 let timestamp = Utc::now().timestamp().to_string();
                 let message = timestamp.clone() + "GET" + "/users/self/verify";
         
-                let hmac_key = base64::decode(auth.secret).unwrap();
+                let hmac_key = base64::decode(&auth.secret).unwrap();
                 let mut mac = HmacSha256::new_varkey(&hmac_key).unwrap();
                 mac.input(message.as_bytes());
                 let signature = mac.result().code();
@@ -161,7 +161,7 @@ impl<'a> WebSocketFeed<'a> {
     }
 
     /// Unsubscribe to a list of channels and products.
-    pub async fn unsubscribe(&mut self, product_ids: &'a [&'a str], channels: &'a [&'a str]) -> crate::error::Result<()> {
+    pub async fn unsubscribe(&mut self, product_ids: &[&str], channels: &[&str]) -> crate::error::Result<()> {
         let message = SubscribeMessage {type_: "unsubscribe", product_ids, channels, auth: None};
         let message = serde_json::to_string(&message).unwrap();
         self.send(Message::Text(message)).await?;
@@ -191,7 +191,7 @@ impl<'a> WebSocketFeed<'a> {
     }
 }
 
-impl<'a> Stream for WebSocketFeed<'a> {
+impl Stream for WebSocketFeed {
     type Item = crate::error::Result<serde_json::Value>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
@@ -207,7 +207,7 @@ impl<'a> Stream for WebSocketFeed<'a> {
     }
 }
 
-impl<'a> Sink<Message> for WebSocketFeed<'a> {
+impl Sink<Message> for WebSocketFeed {
     type Error = Error;
 
     fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
