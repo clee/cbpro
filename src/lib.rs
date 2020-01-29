@@ -2,13 +2,13 @@
 //!
 //! ## cbpro
 //!
-//! This crate provides an easy to use Coinbase Pro binding interface.
-//! For private endpoints use [AuthenticatedClient](client/struct.AuthenticatedClient.html). For public endpoints use [PublicClient](client/struct.PublicClient.html) or [AuthenticatedClient::public](client/struct.AuthenticatedClient.html#method.public).
-//! All methods beloging to the public or private client will return [QueryBuilder<T>](builder/struct.QueryBuilder.html) which has split implementations per T. 
-//! The final result of any operation be it methods from client or the websocket-feed will resolve to [serde_json::Value](https://docs.serde.rs/serde_json/enum.Value.html).
-//!
-//! Get basic feed connection at [WebSocketFeed::connect](websocket/struct.WebSocketFeed.html#method.connect) or the authenticated connection at [WebSocketFeed::connect_auth](websocket/struct.WebSocketFeed.html#method.connect_auth).
-//! For more details on Coinbase Pro go to: [https://docs.pro.coinbase.com](https://docs.pro.coinbase.com).
+//! This crate provides an easy to use Coinbase Pro API wrapper. For private endpoints use [AuthenticatedClient](client/struct.AuthenticatedClient.html). 
+//! For public endpoints use [PublicClient](client/struct.PublicClient.html) or [AuthenticatedClient::public](client/struct.AuthenticatedClient.html#method.public). 
+//! All methods belonging to the public or private client will return [QueryBuilder<T>](builder/struct.QueryBuilder.html) which has split implementations per T. 
+//! The final result of any operation be it methods from the client or the websocket will resolve to [serde_json::Value](https://docs.serde.rs/serde_json/enum.Value.html).
+//! 
+//! The websocket can be found here: [WebSocketFeed](websocket/struct.WebSocketFeed.html).
+//! For more details on Coinbase Pro go to [https://docs.pro.coinbase.com](https://docs.pro.coinbase.com).
 //!
 //! ## Examples
 //!
@@ -61,7 +61,7 @@
 pub mod builder;
 /// Public and private clients
 pub mod client;
-/// cbpro errors
+/// Errors of this crate
 pub mod error;
 mod paging;
 /// Public and private websocket feed

@@ -261,11 +261,11 @@ impl<'a> Book<'a> for BookOptions<'a> {
     }
 }
 
-pub struct PaginateOptions<'a> {
+pub struct PageOptions<'a> {
     params: CBParams<'a>,
 }
 
-impl<'a> PaginateOptions<'a> {
+impl<'a> PageOptions<'a> {
     pub(super) fn new() -> Self {
         Self {
             params: CBParams::new()
@@ -273,7 +273,7 @@ impl<'a> PaginateOptions<'a> {
     }
 }
 
-impl<'a> Params<'a> for PaginateOptions<'a> {
+impl<'a> Params<'a> for PageOptions<'a> {
     fn params_mut(&mut self) -> &mut CBParams<'a> {
         &mut self.params
     }
@@ -283,7 +283,7 @@ impl<'a> Params<'a> for PaginateOptions<'a> {
     }
 }
 
-impl<'a> Paginate<'a> for PaginateOptions<'a> {
+impl<'a> Paginate<'a> for PageOptions<'a> {
     fn set_limit(&mut self, value: i32) {
         self.params_mut().limit = Some(value);
     }
@@ -462,7 +462,7 @@ pub(super) fn apply_json<T: Serialize>(req: &mut Request, json: &T) -> crate::er
 
 /// Builder returned by the public and private client. 
 /// All methods are optional but the builder must be consumed with one of the terminal methods.
-/// Methods beloging to this struct can be chained and calling the same method more than once will overwrite the previously set value.
+/// Methods belonging to this struct can be chained and calling the same method more than once will overwrite the previously set value.
 pub struct QueryBuilder<T> {
     client: Client,
     request: Request,
@@ -470,10 +470,9 @@ pub struct QueryBuilder<T> {
     auth: Option<Auth>,
 }
 /// # Example
-///
+/// 
 /// ```no_run
 /// # use cbpro::client::{PublicClient, SANDBOX_URL};
-///
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let client = PublicClient::new(SANDBOX_URL);
@@ -691,7 +690,6 @@ impl<'a, T: Params<'a> + ClientOID<'a>> QueryBuilder<T> {
 ///
 /// ```no_run
 /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, QTY};
-///
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);

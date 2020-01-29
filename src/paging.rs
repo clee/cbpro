@@ -63,7 +63,7 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin+ 'a> Stream for Paginated<T
 
         let res = match self.as_mut().in_flight.poll_unpin(cx) {
             Poll::Ready(Err(e)) => {
-                return Poll::Ready(Some(Err(Error::new(Kind::Client, Some(e)))));
+                return Poll::Ready(Some(Err(Error::new(Kind::Reqwest, Some(e)))));
             }
             Poll::Ready(Ok(res)) => res,
             Poll::Pending => return Poll::Pending,

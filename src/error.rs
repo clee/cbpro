@@ -7,10 +7,13 @@ pub(crate) type BoxError = Box<dyn error::Error + Send + Sync>;
 
 #[derive(Debug)]
 pub(super) enum Kind {
-    Client,
-    Websocket,
+    Reqwest,
+    Tungstenite,
     Coinbase,
-    Other
+    Utf8Error,
+    Base64,
+    Serde,
+    Hmac,
 }
 
 /// General error type.
@@ -48,10 +51,10 @@ impl fmt::Debug for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let err_msg = match self.kind {
-            Kind::Client => "Invalid inputs provided",
-            Kind::Websocket => "Websocket dropped connection",
+            Kind::Reqwest => "Invalid inputs provided",
+            Kind::Tungstenite => "Websocket dropped connection",
             Kind::Coinbase => "Wrong inputs sent to the coinbase server",
-            _ => "World is ending!",
+            _ => "Wrong inputs provided",
         };
 
         write!(f, "{}", err_msg)
@@ -73,49 +76,49 @@ impl From<CBError> for Error {
 
 impl From<reqwest::Error> for Error {
     fn from(error: reqwest::Error) -> Self {
-        Error::new(Kind::Client, Some(error))
+        Error::new(Kind::Reqwest, Some(error))
     }
 }
 
 impl From<reqwest::header::ToStrError> for Error {
     fn from(error: reqwest::header::ToStrError) -> Self {
-        Error::new(Kind::Client, Some(error))
+        Error::new(Kind::Reqwest, Some(error))
     }
 }
 
 impl From<async_tungstenite::tungstenite::Error> for Error {
     fn from(error: async_tungstenite::tungstenite::Error) -> Self {
-        Error::new(Kind::Websocket, Some(error))
+        Error::new(Kind::Tungstenite, Some(error))
     }
 }
 
 impl From<serde_json::error::Error> for Error {
     fn from(error: serde_json::error::Error) -> Self {
-        Error::new(Kind::Other, Some(error))
+        Error::new(Kind::Serde, Some(error))
     }
 }
 
 impl From<serde_urlencoded::ser::Error> for Error {
     fn from(error: serde_urlencoded::ser::Error) -> Self {
-        Error::new(Kind::Other, Some(error))
+        Error::new(Kind::Serde, Some(error))
     }
 }
 
 impl From<std::str::Utf8Error> for Error {
     fn from(error: std::str::Utf8Error) -> Self {
-        Error::new(Kind::Other, Some(error))
+        Error::new(Kind::Utf8Error, Some(error))
     }
 }
 
 impl From<base64::DecodeError> for Error {
     fn from(error: base64::DecodeError) -> Self {
-        Error::new(Kind::Other, Some(error))
+        Error::new(Kind::Base64, Some(error))
     }
 }
 
 impl From<hmac::crypto_mac::InvalidKeyLength> for Error {
     fn from(error: hmac::crypto_mac::InvalidKeyLength) -> Self {
-        Error::new(Kind::Other, Some(error))
+        Error::new(Kind::Hmac, Some(error))
     }
 }
 

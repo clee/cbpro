@@ -1,6 +1,6 @@
 [package]
 name = "cbpro"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["kgeronim <kevin.geronimo@outlook.com>"]
 edition = "2018"
 description = "Client library for Coinbase Pro"
@@ -24,5 +24,6 @@ sha2 = "0.8.1"
 async-tungstenite = { version = "0.3.1", features = ["tokio-runtime", "tokio-tls"] }
 url = "2.1.1"
 crypto-mac = { version = "0.7.0", features = ["std"] }
-tokio = { version = "0.2.10", features = ["macros", "time"] }
+tokio = { version = "0.2.11", features = ["macros", "time"] }
 tokio-tls = "0.3.0"
+log = "0.4.8"

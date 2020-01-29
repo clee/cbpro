@@ -21,6 +21,7 @@ use async_tungstenite::{
     },
     stream::Stream as StreamSwitcher
 };
+use log::warn;
 
 use tokio::net::TcpStream;
 use tokio_tls::TlsStream;
@@ -108,7 +109,7 @@ impl WebSocketFeed {
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut feed = WebSocketFeed::connect_auth(String::new(), String::new(), String::new(), SANDBOX_FEED_URL).await?;
+    /// let mut feed = WebSocketFeed::connect_auth("key".to_owned(), "pass".to_owned(), "secret".to_owned(), SANDBOX_FEED_URL).await?;
     /// feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
     ///
     /// while let Some(value) = feed.try_next().await? {
@@ -197,9 +198,14 @@ impl Stream for WebSocketFeed {
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         match Pin::new(&mut self.inner).poll_next(cx) {
             Poll::Ready(Some(val)) => {
-                let text = val?.into_text()?;
-                let value: serde_json::Value = serde_json::from_str(&text)?;
-                Poll::Ready(Some(Ok(value)))
+                let val = val?;
+                if val.is_text() {
+                    let value: serde_json::Value = serde_json::from_str(&val.into_text()?)?;
+                    Poll::Ready(Some(Ok(value)))
+                } else {
+                    warn!("server responded with non text: {:?}", val);
+                    Poll::Pending
+                }
             },
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending
@@ -213,7 +219,7 @@ impl Sink<Message> for WebSocketFeed {
     fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
         match Pin::new(&mut self.inner).poll_ready(cx) {
             Poll::Ready(Ok(val)) => Poll::Ready(Ok(val)),
-            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Websocket, Some(val)))),
+            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Tungstenite, Some(val)))),
             Poll::Pending => Poll::Pending
         }
     }
@@ -221,14 +227,14 @@ impl Sink<Message> for WebSocketFeed {
     fn start_send(mut self: Pin<&mut Self>, item: Message) -> Result<(), Self::Error> {
         match Pin::new(&mut self.inner).start_send(item) {
             Ok(val) => Ok(val),
-            Err(val) => Err(Error::new(Kind::Websocket, Some(val))),
+            Err(val) => Err(Error::new(Kind::Tungstenite, Some(val))),
         }
     }
 
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
         match Pin::new(&mut self.inner).poll_flush(cx) {
             Poll::Ready(Ok(val)) => Poll::Ready(Ok(val)),
-            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Websocket, Some(val)))),
+            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Tungstenite, Some(val)))),
             Poll::Pending => Poll::Pending
         }
     }
@@ -236,7 +242,7 @@ impl Sink<Message> for WebSocketFeed {
     fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), Self::Error>> {
         match Pin::new(&mut self.inner).poll_close(cx) {
             Poll::Ready(Ok(val)) => Poll::Ready(Ok(val)),
-            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Websocket, Some(val)))),
+            Poll::Ready(Err(val)) => Poll::Ready(Err(Error::new(Kind::Tungstenite, Some(val)))),
             Poll::Pending => Poll::Pending
         }
     }
