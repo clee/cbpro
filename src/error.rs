@@ -137,8 +137,7 @@ impl CBError {
 
 impl fmt::Display for CBError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let message: serde_json::Value = serde_json::from_str(&self.message).unwrap();
-        write!(f, "Status Code: {}, Reason: {}", self.code, serde_json::to_string(&message).unwrap())
+        write!(f, "Status Code: {}, Reason: {}", self.code, self.message)
     }
 }
 
