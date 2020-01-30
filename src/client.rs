@@ -256,7 +256,7 @@ impl AuthenticatedClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, QTY};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, QTY};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
@@ -296,7 +296,7 @@ impl AuthenticatedClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, ORD};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, ORD};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
@@ -382,7 +382,9 @@ impl AuthenticatedClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, ORD};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::ORD;
+    /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
@@ -412,7 +414,9 @@ impl AuthenticatedClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, FILL};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::FILL;
+    /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
@@ -445,7 +449,9 @@ impl AuthenticatedClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, DEP};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::DEP;
+    /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
@@ -488,7 +494,9 @@ impl AuthenticatedClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, WDL};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::WDL;
+    /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
@@ -650,8 +658,10 @@ impl AuthenticatedClient {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
+    /// use cbpro::client::RPT;
     /// use chrono::{ TimeZone, Utc };
+    /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);

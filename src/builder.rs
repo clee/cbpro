@@ -469,22 +469,7 @@ pub struct QueryBuilder<T> {
     query: T,
     auth: Option<Auth>,
 }
-/// # Example
-/// 
-/// ```no_run
-/// # use cbpro::client::{PublicClient, SANDBOX_URL};
-/// # #[tokio::main]
-/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let client = PublicClient::new(SANDBOX_URL);
-/// let products = client
-///     .get_products()
-///     .json()
-///     .await?;
-/// 
-/// println!("{}", serde_json::to_string_pretty(&products).unwrap());
-/// # Ok(())
-/// # }
-/// ```
+
 impl<'a, T: Params<'a>> QueryBuilder<T> {
     pub(super) fn new(
         client: Client,
@@ -547,6 +532,22 @@ impl<'a, T: Params<'a>> QueryBuilder<T> {
     }
     
     /// General terminal method
+    /// # Example
+    /// 
+    /// ```no_run
+    /// # use cbpro::client::{PublicClient, SANDBOX_URL};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let client = PublicClient::new(SANDBOX_URL);
+    /// let products = client
+    ///     .get_products()
+    ///     .json()
+    ///     .await?;
+    /// 
+    /// println!("{}", serde_json::to_string_pretty(&products).unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn json(self) -> crate::error::Result<Value> {
         let resp = self.client.execute(self.auth_request()?).await?;
         if resp.status().is_success() {
@@ -590,7 +591,7 @@ impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{PublicClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = PublicClient::new(SANDBOX_URL);
+    /// # let client = PublicClient::new(SANDBOX_URL);
     /// let order_book = client.get_product_order_book("BTC-USD")
     ///     .level(3)
     ///     .json()
@@ -613,10 +614,10 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<T> {
     ///
     /// ```no_run
     /// # use cbpro::client::{PublicClient, SANDBOX_URL};
-    /// use futures::TryStreamExt;
+    /// # use futures::TryStreamExt;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = PublicClient::new(SANDBOX_URL);
+    /// # let client = PublicClient::new(SANDBOX_URL);
     /// let mut pages = client.get_trades("BTC-USD")
     ///     .limit(10)
     ///     .after(7102310) // after or before but not both
@@ -660,7 +661,7 @@ impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{PublicClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let client = PublicClient::new(SANDBOX_URL);
+    /// # let client = PublicClient::new(SANDBOX_URL);
     /// let end = chrono::offset::Utc::now();
     /// let start = end - chrono::Duration::hours(5);
     ///
@@ -838,8 +839,9 @@ impl<'a, T: Params<'a> + Report<'a>> QueryBuilder<T> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
     /// use chrono::{ TimeZone, Utc };
+    /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
@@ -865,8 +867,9 @@ impl<'a, T: Params<'a> + Report<'a>> QueryBuilder<T> {
     /// # Example
     ///
     /// ```no_run
-    /// use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
+    /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, RPT};
     /// use chrono::{ TimeZone, Utc };
+    /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
