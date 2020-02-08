@@ -6,7 +6,7 @@ use reqwest::{
     Client, Request
 };
 use serde::Serialize;
-use serde_json::Value;
+use serde::de::DeserializeOwned;
 use sha2::Sha256;
 use crate::error::CBError;
 
@@ -531,6 +531,16 @@ impl<'a, T: Params<'a>> QueryBuilder<T> {
         Ok(request)
     }
     
+    pub async fn text(self) -> crate::error::Result<String> {
+        let resp = self.client.execute(self.auth_request()?).await?;
+        if resp.status().is_success() {
+            Ok(resp.text().await?)
+        } else {
+            let error = CBError::new(resp.status().as_u16(), resp.text().await?);
+            Err(error.into())
+        }   
+    }
+
     /// General terminal method
     /// # Example
     /// 
@@ -541,21 +551,16 @@ impl<'a, T: Params<'a>> QueryBuilder<T> {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let products = client
     ///     .get_products()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&products).unwrap());
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn json(self) -> crate::error::Result<Value> {
-        let resp = self.client.execute(self.auth_request()?).await?;
-        if resp.status().is_success() {
-            Ok(resp.json().await?)
-        } else {
-            let error = CBError::new(resp.status().as_u16(), resp.text().await?);
-            Err(error.into())
-        }   
+    pub async fn json<J: DeserializeOwned>(self) -> crate::error::Result<J> {
+        let json = serde_json::from_str(&self.text().await?)?;
+        Ok(json)
     }
 }
 
@@ -567,10 +572,10 @@ impl<'a, T: Params<'a> + ProductID<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client.cancel_all()
     ///     .product_id("BTC-USD")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -594,7 +599,7 @@ impl<'a, T: Params<'a> + Book<'a>> QueryBuilder<T> {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let order_book = client.get_product_order_book("BTC-USD")
     ///     .level(3)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&order_book).unwrap());
@@ -621,7 +626,7 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<T> {
     /// let mut pages = client.get_trades("BTC-USD")
     ///     .limit(10)
     ///     .after(7102310) // after or before but not both
-    ///     .paginate()?; // or .json().await? for a single request
+    ///     .paginate::<serde_json::Value>()?; // or .json::<serde_json::Value>().await? for a single request
     ///
     /// while let Some(json) = pages.try_next().await? {
     ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
@@ -647,7 +652,7 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<T> {
         self
     }
     /// Terminal method returning a stream of json pages
-    pub fn paginate(self) -> crate::error::Result<Pages<'a>> {
+    pub fn paginate<J: DeserializeOwned>(self) -> crate::error::Result<Pages<'a, J>> {
         let pages = Paginated::new(self.client.clone(), self.auth_request()?, self.query).pages();
         Ok(pages)
     }
@@ -668,7 +673,7 @@ impl<'a, T: Params<'a> + Candle<'a>> QueryBuilder<T> {
     /// let rates = client
     ///     .get_historic_rates("BTC-USD", 3600)
     ///     .range(start, end)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
@@ -693,10 +698,10 @@ impl<'a, T: Params<'a> + ClientOID<'a>> QueryBuilder<T> {
 /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, QTY};
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+/// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
 /// let response = client.place_market_order("BTC-USD", "buy", QTY::Size(10.00))
 ///     .client_oid("<client_oid>")
-///     .json()
+///     .json::<serde_json::Value>()
 ///     .await?;
 /// 
 /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -717,11 +722,11 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
     ///     .stp("dc")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -739,11 +744,11 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
     ///     .stop_price(7010.00)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -769,11 +774,11 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
     ///     .time_in_force("GTT")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -792,11 +797,11 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
     ///     .cancel_after("min")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -817,11 +822,11 @@ impl<'a, T: Params<'a> + Limit<'a>> QueryBuilder<T> {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .place_limit_order("BTC-USD", "sell", 7000.00, 10.00)
     ///     .post_only(true)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -844,14 +849,14 @@ impl<'a, T: Params<'a> + Report<'a>> QueryBuilder<T> {
     /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
     /// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
     ///
     /// let rates = client.create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" })
     ///     .format("pdf")
     ///     .email("<email>")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
@@ -872,14 +877,14 @@ impl<'a, T: Params<'a> + Report<'a>> QueryBuilder<T> {
     /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
     /// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
     ///
     /// let rates = client
     ///     .create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" })
     ///     .email("<email>")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());

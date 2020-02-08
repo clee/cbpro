@@ -2,7 +2,7 @@ use core::pin::Pin;
 use futures::{
     SinkExt,
     sink::Sink,
-    stream::Stream,
+    stream::{Stream, TryStreamExt},
     task::{Context, Poll},
 };
 use async_tungstenite::{
@@ -21,7 +21,6 @@ use async_tungstenite::{
     },
     stream::Stream as StreamSwitcher
 };
-use log::warn;
 
 use tokio::net::TcpStream;
 use tokio_tls::TlsStream;
@@ -31,7 +30,8 @@ use chrono::Utc;
 use hmac::{ Hmac, Mac };
 use sha2::Sha256;
 use crate::client::Auth;
-use crate::error::{ Error, Kind };
+use crate::error::{Error, Kind, WsCloseError};
+use serde::de::DeserializeOwned;
 
 /// wss://ws-feed-public.sandbox.pro.coinbase.com
 pub const SANDBOX_FEED_URL: &'static str = "wss://ws-feed-public.sandbox.pro.coinbase.com";
@@ -76,22 +76,21 @@ impl WebSocketFeed {
     ///
     /// ```no_run
     /// use cbpro::websocket::{WebSocketFeed, SANDBOX_FEED_URL, Channels};
-    /// use futures::TryStreamExt;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut feed = WebSocketFeed::connect(SANDBOX_FEED_URL).await?;
     /// feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
     ///
-    /// while let Some(value) = feed.try_next().await? {
+    /// while let Some(value) = feed.json::<serde_json::Value>().await? {
     ///     println!("{}", serde_json::to_string_pretty(&value).unwrap());
     /// }
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect(url: &str) -> crate::error::Result<WebSocketFeed> {
+    pub async fn connect<T: Into<String>>(url: T) -> crate::error::Result<WebSocketFeed> {
     
-        let url = url::Url::parse(url).unwrap();
+        let url = url::Url::parse(&url.into()).unwrap();
         let (ws_stream, res) = connect_async(url).await?;
 
         Ok(WebSocketFeed {
@@ -105,30 +104,70 @@ impl WebSocketFeed {
     ///
     /// ```no_run
     /// use cbpro::websocket::{WebSocketFeed, SANDBOX_FEED_URL, Channels};
-    /// use futures::TryStreamExt;
     ///
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut feed = WebSocketFeed::connect_auth("key".to_owned(), "pass".to_owned(), "secret".to_owned(), SANDBOX_FEED_URL).await?;
+    /// let mut feed = WebSocketFeed::connect_auth("<key>", "<pass>", "<secret>", SANDBOX_FEED_URL).await?;
     /// feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
     ///
-    /// while let Some(value) = feed.try_next().await? {
+    /// while let Some(value) = feed.json::<serde_json::Value>().await? {
     ///     println!("{}", serde_json::to_string_pretty(&value).unwrap());
     /// }
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect_auth(key: String, pass: String, secret: String, url: &str) -> crate::error::Result<WebSocketFeed> {
+    pub async fn connect_auth<T: Into<String>>(key: T, pass: T, secret: T, url: T) -> crate::error::Result<WebSocketFeed> {
     
-        let url = url::Url::parse(url).unwrap();
+        let url = url::Url::parse(&url.into()).unwrap();
         let (ws_stream, res) = connect_async(url).await?;
 
         Ok(WebSocketFeed {
             inner: ws_stream,
             response: res,
-            auth: Some(Auth { key, pass, secret })
+            auth: Some(
+                Auth { 
+                key: key.into(), 
+                pass: pass.into(), 
+                secret: secret.into() 
+            }
+        )
         })
         
+    }
+
+    pub async fn text(&mut self) -> crate::error::Result<Option<String>> {
+        match self.try_next().await? {
+            Some(msg) => {
+                match msg {
+                    Message::Text(text) => Ok(Some(text)),
+                    Message::Ping(ref value) => {
+                        self.send(Message::Pong(value.clone())).await?;
+                        let ping = serde_json::json!({
+                            "ping": msg.into_text()?,
+                        });
+                        Ok(Some(serde_json::to_string(&ping)?))
+                    },
+                    Message::Pong(ref value) => {
+                        self.send(Message::Ping(value.clone())).await?;
+                        let pong = serde_json::json!({
+                            "pong": msg.into_text()?,
+                        });
+                        Ok(Some(serde_json::to_string(&pong)?))
+                    },
+                    Message::Binary(_) => Ok(Some(msg.into_text()?)),
+                    Message::Close(Some(frame)) => Err(WsCloseError::new(frame.code, frame.reason).into()),
+                    Message::Close(None) => Err(WsCloseError::new(CloseCode::Abnormal, "Close message with no frame received").into()),
+                }
+            },
+            None => Ok(None)
+        }
+    }
+
+    pub async fn json<J: DeserializeOwned>(&mut self) -> crate::error::Result<Option<J>> {
+        match self.text().await? {
+            Some(text) => Ok(Some(serde_json::from_str(&text)?)),
+            None => Ok(None)
+        }
     }
 
     /// Subscribe to a list of channels and products.
@@ -193,22 +232,13 @@ impl WebSocketFeed {
 }
 
 impl Stream for WebSocketFeed {
-    type Item = crate::error::Result<serde_json::Value>;
+    type Item = crate::error::Result<Message>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         match Pin::new(&mut self.inner).poll_next(cx) {
-            Poll::Ready(Some(val)) => {
-                let val = val?;
-                if val.is_text() {
-                    let value: serde_json::Value = serde_json::from_str(&val.into_text()?)?;
-                    Poll::Ready(Some(Ok(value)))
-                } else {
-                    warn!("server responded with non text: {:?}", val);
-                    Poll::Pending
-                }
-            },
+            Poll::Ready(Some(val)) => Poll::Ready(Some(Ok(val?))),
             Poll::Ready(None) => Poll::Ready(None),
-            Poll::Pending => Poll::Pending
+            Poll::Pending => Poll::Pending,
         }
     }
 }

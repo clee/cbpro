@@ -1,5 +1,6 @@
 use std::fmt;
 use std::error;
+use async_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 
 /// Alias for cbpro errors
 pub type Result<T> = std::result::Result<T, Error>;
@@ -50,15 +51,11 @@ impl fmt::Debug for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let err_msg = match self.kind {
-            Kind::Reqwest => "Invalid inputs provided",
-            Kind::Tungstenite => "Websocket dropped connection",
-            Kind::Coinbase => "Wrong inputs sent to the coinbase server",
-            _ => "Wrong inputs provided",
-        };
-
-        write!(f, "{}", err_msg)
- 
+        if let Some(ref source) = self.source {
+            write!(f, "{:?}: {}", self.kind, source)
+        } else {
+           write!(f, "No source for this error") 
+        }
     }
 }
 
@@ -70,6 +67,12 @@ impl error::Error for Error {
 
 impl From<CBError> for Error {
     fn from(error: CBError) -> Self {
+        Error::new(Kind::Coinbase, Some(error))
+    }
+}
+
+impl From<WsCloseError> for Error {
+    fn from(error: WsCloseError) -> Self {
         Error::new(Kind::Coinbase, Some(error))
     }
 }
@@ -142,6 +145,30 @@ impl fmt::Display for CBError {
 }
 
 impl error::Error for CBError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        None
+    }
+}
+
+#[derive(Debug)]
+pub struct WsCloseError {
+    code: CloseCode,
+    reason: String,
+}
+
+impl WsCloseError {
+    pub(super) fn new<T: Into<String>>(code: CloseCode, reason: T) -> Self {
+        WsCloseError { code, reason: reason.into() }
+    }
+}
+
+impl fmt::Display for WsCloseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.reason)
+    }
+}
+
+impl error::Error for WsCloseError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         None
     }

@@ -79,13 +79,13 @@ impl AuthenticatedClient {
     /// 
     /// #[tokio::main]
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///     let client = AuthenticatedClient::new("key".to_owned(), "pass".to_owned(), "secret".to_owned(), SANDBOX_URL);
+    ///     let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     ///     Ok(())
     /// }
     /// ```
-    pub fn new(key: String, pass: String, secret: String, url: &str) -> Self {
+    pub fn new<T: Into<String>>(key: T, pass: T, secret: T, url: T) -> Self {
         Self {
-            auth: Auth { key, pass, secret },
+            auth: Auth { key: key.into(), pass: pass.into(), secret: secret.into() },
             public: PublicClient::new(url),
         }
     }
@@ -108,10 +108,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let accounts = client
     ///     .list_accounts()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&accounts).unwrap());
@@ -136,10 +136,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let account = client
     ///     .get_account("<account_id>")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&account).unwrap());
@@ -165,10 +165,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let history = client
     ///     .get_account_history("<account_id>")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&history).unwrap());
@@ -195,10 +195,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let holds = client
     ///     .get_holds("<account_id>")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&holds).unwrap());
@@ -224,10 +224,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .place_limit_order("BTC-USD", "buy", 7000.00, 10.00)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -259,10 +259,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, QTY};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .place_market_order("BTC-USD", "buy", QTY::Size(10.00))
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -299,10 +299,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL, ORD};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .cancel_order(ORD::OrderID("<order_id>"))
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -330,10 +330,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .cancel_all()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -358,10 +358,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let orders = client
     ///     .list_orders(&["open"])
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&orders).unwrap());
@@ -387,10 +387,10 @@ impl AuthenticatedClient {
     /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let order = client
     ///     .get_order(ORD::OrderID("<order_id>"))
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&order).unwrap());
@@ -419,10 +419,10 @@ impl AuthenticatedClient {
     /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let fills = client
     ///     .get_fills(FILL::ProductID("BTC-USD"))
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&fills).unwrap());
@@ -454,10 +454,10 @@ impl AuthenticatedClient {
     /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .deposit(10.00, "BTC", DEP::CBAccountID("<account_id>"))
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -499,10 +499,10 @@ impl AuthenticatedClient {
     /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .withdraw(10.00, "BTC", WDL::CBAccountID("<account_id>"))
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -551,10 +551,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .convert("USD", "USDC", 100.00)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -582,10 +582,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let payment_methods = client
     ///     .list_payment_methods()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&payment_methods).unwrap());
@@ -608,10 +608,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let coinbase_accounts = client
     ///     .list_coinbase_accounts()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&coinbase_accounts).unwrap());
@@ -635,10 +635,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let current_fees = client
     ///     .get_current_fees()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&current_fees).unwrap());
@@ -664,13 +664,13 @@ impl AuthenticatedClient {
     /// 
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let start_date = Utc.ymd(2018, 8, 10).and_hms(0, 0, 0);
     /// let end_date = Utc.ymd(2018, 8, 28).and_hms(0, 0, 0);
     ///
     /// let rates = client
     ///     .create_report(start_date, end_date, RPT::Fills { product_id: "BTC-USD" })
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
@@ -713,10 +713,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let report_status = client
     ///     .get_report_status("<report_id>")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&report_status).unwrap());
@@ -740,10 +740,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let profiles = client
     ///     .list_profiles()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&profiles).unwrap());
@@ -766,10 +766,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let profile = client
     ///     .get_profile("<profile_id>")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&profile).unwrap());
@@ -793,10 +793,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let response = client
     ///     .transfer_profile("<from_profile_id>", "<to_profile_id>", "BTC-USD", 10.00)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&response).unwrap());
@@ -828,10 +828,10 @@ impl AuthenticatedClient {
     /// # use cbpro::client::{AuthenticatedClient, SANDBOX_URL};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let client = AuthenticatedClient::new(String::new(), String::new(), String::new(), SANDBOX_URL);
+    /// # let client = AuthenticatedClient::new("<key>", "<pass>", "<secret>", SANDBOX_URL);
     /// let trailing_volume = client
     ///     .get_trailing_volume()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&trailing_volume).unwrap());
@@ -868,10 +868,10 @@ impl PublicClient {
     ///     Ok(())
     /// }
     /// ```
-    pub fn new(url: &str) -> Self {
+    pub fn new<T: Into<String>>(url: T) -> Self {
         Self {
             client: Client::new(),
-            url: Url::parse(url).expect("Invalid Url"),
+            url: Url::parse(&url.into()).expect("Invalid Url"),
         }
     }
     /// Get a list of available currency pairs for trading.
@@ -884,7 +884,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let products = client
     ///     .get_products()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&products).unwrap());
@@ -911,7 +911,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let order_book = client
     ///     .get_product_order_book("BTC-USD")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&order_book).unwrap());
@@ -938,7 +938,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let ticker = client
     ///     .get_product_ticker("BTC-USD")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&ticker).unwrap());
@@ -966,7 +966,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let mut trades = client
     ///     .get_trades("BTC-USD")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&trades).unwrap());
@@ -994,7 +994,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let rates = client
     ///     .get_historic_rates("BTC-USD", 3600)
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&rates).unwrap());
@@ -1025,7 +1025,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let stats = client
     ///     .get_24hr_stats("BTC-USD")
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&stats).unwrap());
@@ -1052,7 +1052,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let currencies = client
     ///     .get_currencies()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&currencies).unwrap());
@@ -1078,7 +1078,7 @@ impl PublicClient {
     /// # let client = PublicClient::new(SANDBOX_URL);
     /// let time = client
     ///     .get_time()
-    ///     .json()
+    ///     .json::<serde_json::Value>()
     ///     .await?;
     /// 
     /// println!("{}", serde_json::to_string_pretty(&time).unwrap());

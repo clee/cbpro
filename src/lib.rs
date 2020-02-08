@@ -4,8 +4,7 @@
 //!
 //! This crate provides an easy to use Coinbase Pro API wrapper. For private endpoints use [AuthenticatedClient](client/struct.AuthenticatedClient.html). 
 //! For public endpoints use [PublicClient](client/struct.PublicClient.html) or [AuthenticatedClient::public](client/struct.AuthenticatedClient.html#method.public). 
-//! All methods belonging to the public or private client will return [QueryBuilder<T>](builder/struct.QueryBuilder.html) which has split implementations per T. 
-//! The final result of any operation be it methods from the client or the websocket will resolve to [serde_json::Value](https://docs.serde.rs/serde_json/enum.Value.html).
+//! All methods belonging to the public or private client will return [QueryBuilder<T>](builder/struct.QueryBuilder.html) which has split implementations per T.
 //! 
 //! The websocket can be found here: [WebSocketFeed](websocket/struct.WebSocketFeed.html).
 //! For more details on Coinbase Pro go to [https://docs.pro.coinbase.com](https://docs.pro.coinbase.com).
@@ -19,7 +18,7 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let client = PublicClient::new(SANDBOX_URL);
-//!     let products = client.get_products().json().await?;
+//!     let products = client.get_products().json::<serde_json::Value>().await?;
 //!     println!("{}", serde_json::to_string_pretty(&products).unwrap());
 //!     Ok(())
 //! }
@@ -32,7 +31,9 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let client = PublicClient::new(SANDBOX_URL);
-//!     let mut pages = client.get_trades("BTC-USD").paginate()?;
+//!     let mut pages = client
+//!         .get_trades("BTC-USD")
+//!         .paginate::<serde_json::Value>()?;
 //!
 //!     while let Some(json) = pages.try_next().await? {
 //!         println!("{}", serde_json::to_string_pretty(&json).unwrap());
@@ -44,14 +45,13 @@
 //! ### Async Websocket
 //! ```no_run
 //! use cbpro::websocket::{Channels, WebSocketFeed, SANDBOX_FEED_URL};
-//! use futures::TryStreamExt;
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let mut feed = WebSocketFeed::connect(SANDBOX_FEED_URL).await?;
 //!     feed.subscribe(&["BTC-USD"], &[Channels::LEVEL2]).await?;
 //!
-//!     while let Some(value) = feed.try_next().await? {
+//!     while let Some(value) = feed.json::<serde_json::Value>().await? {
 //!         println!("{}", serde_json::to_string_pretty(&value).unwrap());
 //!     }
 //!     Ok(())

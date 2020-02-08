@@ -5,11 +5,11 @@ use futures::{
     task::{Context, Poll},
 };
 use reqwest::{Response, Client, Request};
+use serde::de::DeserializeOwned;
 use crate::{
     builder::{ Paginate, apply_query, Params },
     error::{ Error, CBError, Kind }
 };
-use serde_json::Value;
 
 enum State {
     Start,
@@ -18,7 +18,7 @@ enum State {
 
 type ResponseFuture = BoxFuture<'static, Result<Response, reqwest::Error>>;
 /// Alias representing a stream of json pages
-pub type Pages<'a> = BoxStream<'a, crate::error::Result<Value>>;
+pub type Pages<'a, J> = BoxStream<'a, crate::error::Result<J>>;
 
 pub(super) struct Paginated<T> {
     in_flight: ResponseFuture,
@@ -39,11 +39,11 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> Paginated<T> {
         }
     }
 
-    pub(super) fn pages(self) -> Pages<'a> {
+    pub(super) fn pages<J: DeserializeOwned>(self) -> Pages<'a, J> {
         self.then(|res| async move { 
             let resp = res?;
             if resp.status().is_success() {
-                Ok(resp.json::<Value>().await?)
+                Ok(resp.json::<J>().await?)
             } else {
                 let error = CBError::new(resp.status().as_u16(), resp.text().await?);
                 Err(error.into())
