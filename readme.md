@@ -7,7 +7,7 @@ Async only support
 Add this in your `Cargo.toml`:
 ```toml
 [dependencies]
-cbpro = "0.8"
+cbpro = "0.9"
 futures = "0.3"
 serde_json = "1.0"
 tokio = { version = "0.2", features = ["macros", "time"] }
