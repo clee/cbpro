@@ -88,7 +88,7 @@ impl WebSocketFeed {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect<T: Into<String>>(url: T) -> crate::error::Result<WebSocketFeed> {
+    pub async fn connect<U: Into<String>>(url: U) -> crate::error::Result<WebSocketFeed> {
     
         let url = url::Url::parse(&url.into()).unwrap();
         let (ws_stream, res) = connect_async(url).await?;
@@ -116,8 +116,13 @@ impl WebSocketFeed {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn connect_auth<T: Into<String>>(key: T, pass: T, secret: T, url: T) -> crate::error::Result<WebSocketFeed> {
-    
+    pub async fn connect_auth<K, P, S, U>(key: K, pass: P, secret: S, url: U) -> crate::error::Result<WebSocketFeed>
+    where
+        K: Into<String>,
+        P: Into<String>,
+        S: Into<String>,
+        U: Into<String>,
+    {
         let url = url::Url::parse(&url.into()).unwrap();
         let (ws_stream, res) = connect_async(url).await?;
 

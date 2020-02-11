@@ -83,7 +83,13 @@ impl AuthenticatedClient {
     ///     Ok(())
     /// }
     /// ```
-    pub fn new<T: Into<String>>(key: T, pass: T, secret: T, url: T) -> Self {
+    pub fn new<K, P, S, U>(key: K, pass: P, secret: S, url: U) -> Self 
+    where
+        K: Into<String>,
+        P: Into<String>,
+        S: Into<String>,
+        U: Into<String>,
+    {
         Self {
             auth: Auth { key: key.into(), pass: pass.into(), secret: secret.into() },
             public: PublicClient::new(url),
@@ -868,7 +874,7 @@ impl PublicClient {
     ///     Ok(())
     /// }
     /// ```
-    pub fn new<T: Into<String>>(url: T) -> Self {
+    pub fn new<U: Into<String>>(url: U) -> Self {
         Self {
             client: Client::new(),
             url: Url::parse(&url.into()).expect("Invalid Url"),
