@@ -6,15 +6,15 @@ use futures::{
     task::{Context, Poll},
 };
 use async_tungstenite::{
-    WebSocketStream, 
+    WebSocketStream,
     tokio::{
         connect_async,
         TokioAdapter
     },
     tungstenite::{
-        Message, 
+        Message,
         protocol::{
-            CloseFrame, 
+            CloseFrame,
             frame::coding::CloseCode,
         },
         handshake::client::Response
@@ -23,7 +23,7 @@ use async_tungstenite::{
 };
 
 use tokio::net::TcpStream;
-use tokio_tls::TlsStream;
+use tokio_native_tls::TlsStream;
 use serde::Serialize;
 use std::collections::HashMap;
 use chrono::Utc;
@@ -66,7 +66,7 @@ type HmacSha256 = Hmac<Sha256>;
 
 /// Stream with private or public access to Coinbase's Websocket Feed
 pub struct WebSocketFeed {
-    inner: WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TokioAdapter<TokioAdapter<TcpStream>>>>>>,
+    inner: WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TcpStream>>>>,
     response: Response,
     auth: Option<Auth>
 }
@@ -89,7 +89,7 @@ impl WebSocketFeed {
     /// # }
     /// ```
     pub async fn connect<U: Into<String>>(url: U) -> crate::error::Result<WebSocketFeed> {
-    
+
         let url = url::Url::parse(&url.into()).unwrap();
         let (ws_stream, res) = connect_async(url).await?;
 
@@ -98,7 +98,7 @@ impl WebSocketFeed {
             response: res,
             auth: None
         })
-        
+
     }
     /// # Example
     ///
@@ -130,14 +130,13 @@ impl WebSocketFeed {
             inner: ws_stream,
             response: res,
             auth: Some(
-                Auth { 
-                key: key.into(), 
-                pass: pass.into(), 
-                secret: secret.into() 
+                Auth {
+                key: key.into(),
+                pass: pass.into(),
+                secret: secret.into()
             }
         )
         })
-        
     }
 
     pub async fn text(&mut self) -> crate::error::Result<Option<String>> {
@@ -181,15 +180,15 @@ impl WebSocketFeed {
             Some(ref auth) => {
                 let timestamp = Utc::now().timestamp().to_string();
                 let message = timestamp.clone() + "GET" + "/users/self/verify";
-        
+
                 let hmac_key = base64::decode(&auth.secret).unwrap();
                 let mut mac = HmacSha256::new_varkey(&hmac_key).unwrap();
                 mac.input(message.as_bytes());
                 let signature = mac.result().code();
                 let b64_signature = base64::encode(&signature);
-        
+
                 let mut map = HashMap::new();
-        
+
                 map.insert("key", auth.key.to_string());
                 map.insert("passphrase", auth.pass.to_string());
                 map.insert("timestamp", timestamp);
@@ -214,12 +213,12 @@ impl WebSocketFeed {
     }
 
     /// Returns a shared reference to the inner stream.
-    pub fn get_ref(&self) -> &WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TokioAdapter<TokioAdapter<TcpStream>>>>>> {
+    pub fn get_ref(&self) -> &WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TcpStream>>>> {
         &self.inner
     }
 
     /// Returns a mutable reference to the inner stream.
-    pub fn get_mut(&mut self) -> &mut WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TokioAdapter<TokioAdapter<TcpStream>>>>>> {
+    pub fn get_mut(&mut self) -> &mut WebSocketStream<StreamSwitcher<TokioAdapter<TcpStream>, TokioAdapter<TlsStream<TcpStream>>>> {
         &mut self.inner
     }
 

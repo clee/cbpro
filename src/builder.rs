@@ -630,7 +630,7 @@ impl<'a, T: Params<'a> + Paginate<'a> + Send + Unpin + 'a> QueryBuilder<T> {
     ///
     /// while let Some(json) = pages.try_next().await? {
     ///     println!("{}", serde_json::to_string_pretty(&json).unwrap());
-    ///     tokio::time::delay_for(core::time::Duration::new(1, 0)).await;
+    ///     tokio::time::sleep(core::time::Duration::new(1, 0)).await;
     /// }
     /// # Ok(())
     /// # }
